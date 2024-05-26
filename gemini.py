@@ -1,3 +1,4 @@
+import os
 import time
 import json
 import random
@@ -18,7 +19,7 @@ from pynput.keyboard import Key as PyKey, Controller
 from dotenv import load_dotenv
 from pprint import pprint
 
-from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement
+from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, ensure_directory_exists, save_svg_to_png
 
 
 # Load environment variables from .env file
@@ -81,13 +82,18 @@ for task in JOBS['tasks']:
     prompt_files   = task['files']
     files_uploaded = False
 
+    # Ensure the output directory exists
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(base_dir, 'notebooks', f"{task_id}")
+    ensure_directory_exists(output_dir)
+
     print(f'[x] Started Task ID: {task_id}.')
 
     # Open Gemini
     driver.get('https://gemini.google.com/')
 
     for idx, user_query in enumerate(task['prompts']):
-        print(f'[x] {task_id} - Started Prompt {idx+1}: {user_query}')
+        print(f'[x] {task_id} - Starting Prompt {idx+1}: {user_query}')
         # Find the input text field elem
         input_text_elem_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
         WebDriverWait(driver, 120).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
@@ -127,12 +133,17 @@ for task in JOBS['tasks']:
                 print(f'[x] Prompt {idx+1}: File Uploaded Successfully! - {file}')
             # Make sure script doesn't attempt to upload files again.
             files_uploaded = True
-
+            time.sleep(3)
 
         # Submit the query.
         submit_prompt_btn_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
-        time.sleep(3)
-        WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+
+        try:
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+        except Exception:
+            submit_prompt_btn_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/div/button'
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+
         submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
         submit_prompt_btn.click()
 
@@ -186,6 +197,16 @@ for task in JOBS['tasks']:
         WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, copy_response_xpath)))
         copy_response_button = response_footer_element.find_element(By.XPATH, copy_response_xpath)
         copy_response_button.click()
+
+        # Find all SVG elements within the response container
+        svg_elements = gemini_reponse_elem.find_elements(By.TAG_NAME, 'svg')
+
+        # Save each SVG element as a PNG file in the order they appear
+        for index, svg_element in enumerate(svg_elements):
+            svg_data = svg_element.get_attribute('outerHTML')
+            file_path = os.path.join(output_dir, f'svg_{index + 1}.png')
+            save_svg_to_png(svg_data, file_path)
+            print(f'[x] Saved Prompt {idx+1} plot to path: {file_path}')
 
         time.sleep(3)
 
