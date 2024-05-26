@@ -40,8 +40,16 @@ Create a `jobs.json` file in the script directory with the following structure:
     "tasks": [
         {
             "task_id": "00",
-            "files": [],
-            "prompts": []
+            "files": [
+                "relative_file_path_1",
+                "relative_file_path_2",
+                ...
+            ],
+            "prompts": [
+                "User Prompt 1",
+                "User Prompt 2",
+                ...
+            ]
         }
     ]
 }
