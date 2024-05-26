@@ -6,3 +6,4 @@ logs.txt
 *.png
 *.jpg
 *.jpeg
+*.ipynb
