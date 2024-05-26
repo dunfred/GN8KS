@@ -73,3 +73,7 @@ Once Chrome is running in debug mode and you are logged into Gemini:
 ## Author
 
 [Fred Dunyo](https://github.com/dunfred)
+
+## Miscellaneous
+1. Gemini Chrome Port: 9222
+2. ChatGPT Chrome Port: 9333
