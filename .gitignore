@@ -1,0 +1,5 @@
+outputs.json
+query_files/*
+*.pyc
+__pycache__
+logs.txt
