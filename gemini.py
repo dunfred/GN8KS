@@ -1,3 +1,4 @@
+import base64
 import os
 import time
 import json
@@ -84,7 +85,7 @@ for task in JOBS['tasks']:
 
     # Ensure the output directory exists
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    output_dir = os.path.join(base_dir, 'notebooks', f"{task_id}")
+    output_dir = os.path.join(base_dir, 'notebooks', f"ID_{task_id}")
     ensure_directory_exists(output_dir)
 
     print(f'[x] Started Task ID: {task_id}.')
@@ -178,16 +179,15 @@ for task in JOBS['tasks']:
         else:
             gemini_reponse_elem = None
 
-        # print('GEMINI RESPONSE ELEM:', gemini_reponse_elem)
-
         # Define the locator for the footer elements
         response_footer_locator = (By.XPATH, "following-sibling::div[contains(@class, 'response-container-footer')]")
 
         # Wait for the last footer element to be present
-        response_footer_element = WebDriverWait(driver, 60).until(LastFooterElement(observed_element_locator, "response-container-footer"))
+        response_footer_element = WebDriverWait(driver, 180).until(LastFooterElement(observed_element_locator, "response-container-footer"))
         # print("RESPONSE FOOTER ELEM:", response_footer_element)
 
         # Finding and clicking menu action bar to show copy button
+        time.sleep(3)
         WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, ".//message-actions/div/div/div[2]/button")))
         more_options_menu = response_footer_element.find_element(By.XPATH, ".//message-actions/div/div/div[2]/button")
         more_options_menu.click()
@@ -198,15 +198,32 @@ for task in JOBS['tasks']:
         copy_response_button = response_footer_element.find_element(By.XPATH, copy_response_xpath)
         copy_response_button.click()
 
-        # Find all SVG elements within the response container
-        svg_elements = gemini_reponse_elem.find_elements(By.TAG_NAME, 'svg')
+        # Use JavaScript to get the attribute value
+        response_ngcontent_id = driver.execute_script("return arguments[0].getAttributeNames().find(name => name.startsWith('_ngcontent-'))", gemini_reponse_elem)
+        print("Response ID:", response_ngcontent_id)
 
-        # Save each SVG element as a PNG file in the order they appear
-        for index, svg_element in enumerate(svg_elements):
-            svg_data = svg_element.get_attribute('outerHTML')
-            file_path = os.path.join(output_dir, f'svg_{index + 1}.png')
-            save_svg_to_png(svg_data, file_path)
-            print(f'[x] Saved Prompt {idx+1} plot to path: {file_path}')
+        # Find all img elements within the response element that have the ngcontent attribute
+        plot_images = gemini_reponse_elem.find_elements(By.TAG_NAME, 'img')
+        plot_images = [i for i in plot_images if str(i.get_attribute('alt')).lower().strip() == "chart shown as an image"]
+
+        # Iterate through each plot image and save it
+        for img_idx, img in enumerate(plot_images):
+            # Get the src attribute, which contains the base64 encoded image
+            src = img.get_attribute('src')
+            alt = img.get_attribute('alt')
+
+            # Remove the base64 prefix
+            if 'base64,' in src:
+                base64_data = src.split('base64,')[1]
+            else:
+                base64_data = src
+
+            # Decode the base64 data and save the image
+            img_data = base64.b64decode(base64_data)
+            file_path = os.path.join(output_dir, f'Gemini_userquery{idx+1}_plot{img_idx+1}.png')
+
+            with open(file_path, 'wb') as file:
+                file.write(img_data)
 
         time.sleep(3)
 

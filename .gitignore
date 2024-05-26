@@ -3,3 +3,6 @@ query_files/*
 *.pyc
 __pycache__
 logs.txt
+*.png
+*.jpg
+*.jpeg
