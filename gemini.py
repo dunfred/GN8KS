@@ -20,6 +20,7 @@ from pynput.keyboard import Key as PyKey, Controller
 from dotenv import load_dotenv
 from pprint import pprint
 
+from bake_notebook import IPYNBGenerator
 from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, ensure_directory_exists, save_svg_to_png
 
 
@@ -231,20 +232,26 @@ for task in JOBS['tasks']:
             'prompt': user_query,
             'time_to_ice': time_to_trigger_ice,
             'end_to_end_time': end_to_end_time,
-            'response': pyperclip.paste()
+            'response': pyperclip.paste(),
+            'prompt_files': prompt_files
         })
-
-        with open('outputs.json', 'a') as out:
+        
+        # Create local update/backup
+        with open('outputs.json', 'w') as out:
             out.write(json.dumps(OUTPUT))
 
+    # Instantiate class for generating notebook after all prompts are done
+    ipynb_gen = IPYNBGenerator(
+        output_path = output_dir,
+        rater_id    = RATER_ID,
+        task_id     = task_id
+    )
 
-
-
-
-
-
-
-
+    # Generate notebook
+    ipynb_gen.text_to_notebook(
+        OUTPUT[task_id]
+    )
+    print(f'[x] Completed Task ID: {task_id}.')
 
 
 
