@@ -9,11 +9,9 @@ from pathlib import Path
 from selenium import webdriver
 from collections import defaultdict
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.service import Service as ChromeService
 from pynput.keyboard import Key as PyKey, Controller
 
@@ -21,7 +19,7 @@ from dotenv import load_dotenv
 from pprint import pprint
 
 from bake_notebook import IPYNBGenerator
-from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, ensure_directory_exists, save_svg_to_png
+from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, ensure_directory_exists
 
 
 # Load environment variables from .env file
