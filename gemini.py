@@ -99,11 +99,18 @@ for task in JOBS['tasks']:
         # Open Gemini
         driver.get('https://gemini.google.com/')
 
+        try:
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.TAG_NAME, 'bard-sidenav-content')))
+            main_container_tag_name = 'bard'
+        except Exception:
+            main_container_tag_name = 'mat'
+
         for idx, user_query in enumerate(task['prompts']):
             print(f'[x] {task_id} - Starting Prompt {idx+1}: {user_query}')
             # Find the input text field elem
-            input_text_elem_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
-            WebDriverWait(driver, 120).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
+            input_text_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
+
+            WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
 
             # Generate full path to all prompt files
             files_str = list(map(lambda x: str(Path(x).resolve()), prompt_files))
@@ -119,9 +126,9 @@ for task in JOBS['tasks']:
             if not files_uploaded:
                 for file in files_str:
                     if is_first_file:
-                        upload_files_elem_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
+                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
                     else:
-                        upload_files_elem_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/uploader/div[1]/div/button'
+                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/uploader/div[1]/div/button'
                     
                     WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
                     
@@ -143,13 +150,18 @@ for task in JOBS['tasks']:
                 time.sleep(3)
 
             # Submit the query.
-            submit_prompt_btn_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
+            submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
 
+            time.sleep(3)
             try:
                 WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
             except Exception:
-                submit_prompt_btn_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/div/button'
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/div/button'
+                try:
+                    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                except Exception:
+                    submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
+                    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
             submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
             submit_prompt_btn.click()
@@ -199,7 +211,7 @@ for task in JOBS['tasks']:
             more_options_menu.click()
 
             # Finding and clicking the actual copy button
-            copy_response_xpath = "//*[contains(@id, 'mat-menu-panel-')]/div/div/button"
+            copy_response_xpath = f"//*[contains(@id, '{main_container_tag_name}-menu-panel-')]/div/div/button"
             WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, copy_response_xpath)))
             copy_response_button = response_footer_element.find_element(By.XPATH, copy_response_xpath)
             copy_response_button.click()
