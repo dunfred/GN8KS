@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 from pprint import pprint
 
 from bake_notebook import IPYNBGenerator
-from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, ensure_directory_exists
+from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
 
 
 # Load environment variables from .env file
@@ -245,29 +245,41 @@ for task in JOBS['tasks']:
 
             time.sleep(3)
 
-            OUTPUT[task_id].append({
-                'prompt': user_query,
-                'time_to_ice': time_to_trigger_ice,
-                'end_to_end_time': end_to_end_time,
-                'response': pyperclip.paste(),
-                'prompt_files': prompt_files
-            })
+            notebook_response = pyperclip.paste()
+
+            # Update the local backup data with latest prompt data if already exists, else add as new
+            update_prompt_output(
+                main_dict       = OUTPUT,
+                id_key          = task_id,
+                new_prompt_dict =   {
+                    'prompt': user_query,
+                    'time_to_ice': time_to_trigger_ice,
+                    'end_to_end_time': end_to_end_time,
+                    'response': notebook_response,
+                    'prompt_files': prompt_files,
+                    'timestamp': str(datetime.now())
+                }
+            )
             
             # Create local update/backup
             with open('gemini-outputs.json', 'w') as out:
                 out.write(json.dumps(OUTPUT))
 
-            df = pd.DataFrame([{
+            new_data = pd.Series({
                 'rater_id': RATER_ID,
                 'task_id': task_id,
                 'prompt': user_query,
                 'time_to_ice': time_to_trigger_ice,
                 'end_to_end_time': end_to_end_time,
                 'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
+                'response': notebook_response,
                 'timestamp': datetime.now()
-            }])
+            })
             ensure_directory_exists('time-tracksheet/')
-            df.to_csv('time-tracksheet/gemini-prompts-time-track-sheet.csv', mode='a', index=False, header=False)
+
+            df_filepath = 'time-tracksheet/gemini-prompts-time-track-sheet.xlsx'
+            append_to_excel(df_filepath, new_data)
+
 
         # Instantiate class for generating notebook after all prompts are done
         ipynb_gen = IPYNBGenerator(

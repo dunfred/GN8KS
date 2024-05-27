@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 from pprint import pprint
 
 from bake_notebook import IPYNBGenerator
-from utils import GPTSpecificTextInLastElement, ensure_directory_exists
+from utils import GPTSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
 
 
 # Load environment variables from .env file
@@ -242,29 +242,38 @@ for task in JOBS['tasks']:
                     blk_text = blk.text.strip()
                     blk_text = blk_text.replace("\n", "\r\n")
                     notebook_str += f"```text?code_stdout&code_event_index=3\r\n{blk_text}\r\n```"
-                
-            OUTPUT[task_id].append({
-                'prompt': user_query,
-                'end_to_end_time': end_to_end_time,
-                'response': notebook_str,
-                'prompt_files': prompt_files
-            })
+
+
+            update_prompt_output(
+                main_dict       = OUTPUT,
+                id_key          = task_id,
+                new_prompt_dict =   {
+                    'prompt': user_query,
+                    'end_to_end_time': end_to_end_time,
+                    'response': notebook_str,
+                    'prompt_files': prompt_files,
+                    'timestamp': str(datetime.now())
+                }
+            )
             
             # Create local update/backup
             with open('gpt-outputs.json', 'w') as out:
                 out.write(json.dumps(OUTPUT))
 
-            df = pd.DataFrame([{
+            new_data = pd.Series({
                 'rater_id': RATER_ID,
                 'task_id': task_id,
                 'prompt': user_query,
                 'time_to_ice': 0,
                 'end_to_end_time': end_to_end_time,
                 'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
+                'response': notebook_str,
                 'timestamp': datetime.now()
-            }])
+            })
+            
             ensure_directory_exists('time-tracksheet/')
-            df.to_csv('time-tracksheet/gpt-prompts-time-track-sheet.csv', mode='a', index=False, header=False)
+            df_filepath = 'time-tracksheet/gpt-prompts-time-track-sheet.xlsx'
+            append_to_excel(df_filepath, new_data)
 
         # Instantiate class for generating notebook after all prompts are done
         ipynb_gen = IPYNBGenerator(

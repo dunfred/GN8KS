@@ -14,7 +14,7 @@ class IPYNBGenerator:
             raise ValueError('You need to provide a valid rater ID')
         if task_id == "0":
             raise ValueError('You need to provide a valid task ID')
-        
+
         self.nb_for      = nb_for
         self.rater_id    = rater_id
         self.task_id     = task_id
@@ -58,7 +58,7 @@ class IPYNBGenerator:
                     current_block = {"type": "markdown", "content": line + "\n"}
                     blocks.append(current_block)
                     current_block = {"type": "", "content": ""}
-            
+
             if current_block["content"].strip():
                 blocks.append(current_block)
 

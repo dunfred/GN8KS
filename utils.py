@@ -1,12 +1,60 @@
 import os
+import pandas as pd
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
 
 # Function to ensure the directory exists
 def ensure_directory_exists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+# Function to make sure that after restarting the bot, it will properly update old prompt data with latest scrapped data
+def update_prompt_output(main_dict, id_key, new_prompt_dict):
+    """
+    Updates the list of dictionaries within the main dictionary based on the id_key.
+    If a dictionary with the same 'prompt' and 'prompt_files' exists, it replaces it. Otherwise, it adds the new dictionary.
+    
+    :param main_dict: The main dictionary containing the lists.
+    :param id_key: The key corresponding to the list within the main dictionary.
+    :param new_prompt_dict: The new dictionary to add or replace in the list.
+    """
+    if id_key not in main_dict:
+        main_dict[id_key] = []
+    
+    found = False
+    for i, item in enumerate(main_dict[id_key]):
+        if item['prompt'] == new_prompt_dict['prompt'] and item['prompt_files'] == new_prompt_dict['prompt_files']:
+            main_dict[id_key][i] = new_prompt_dict
+            found = True
+            break
+    
+    if not found:
+        main_dict[id_key].append(new_prompt_dict)
+
+
+def append_to_excel(file_path, new_data):
+    """
+    Appends a new row of data to an existing Excel file or creates a new file with the appropriate headers.
+    
+    :param file_path: The path to the Excel file.
+    :param new_data: The new data to append as a pandas Series.
+    """
+    if os.path.exists(file_path):
+        # Load existing data
+        existing_data = pd.read_excel(file_path)
+        
+        # Append new data
+        new_df = pd.DataFrame([new_data], columns=existing_data.columns)
+        updated_data = pd.concat([existing_data, new_df], ignore_index=True)
+        
+        # Save to Excel
+        updated_data.to_excel(file_path, index=False)
+    else:
+        # Create a new file with headers and new data
+        new_df = pd.DataFrame([new_data])
+        new_df.to_excel(file_path, index=False)
 
 # Custom expected condition to wait for any text in the last element that holds Gemini's response
 class TextInLastElement:
