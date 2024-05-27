@@ -1,4 +1,4 @@
-# Automation Script for Running and Documenting Prompts
+# Automation Script for Running and Documenting Prompts v2.2.1
 
 This project aims to automate the process of running and documenting the results of various prompts and storing them into notebooks. 
 
@@ -9,7 +9,9 @@ This project aims to automate the process of running and documenting the results
 ## Setup
 
 1. Ensure Google Chrome is installed and up-to-date.
-2. Start Chrome in debug mode using one of the commands below:
+2. Start two Chrome sessions in debug mode using one of the commands below depending on your Operating System:
+
+- ### Start Chrome Session For Gemini
 
     **Windows:**
     ```sh
@@ -25,21 +27,46 @@ This project aims to automate the process of running and documenting the results
     ```sh
     google-chrome --remote-debugging-port=9222 --user-data-dir="/home/<your-username>/selenium_chrome_profile"
     ```
+- ### Start Chrome Session For ChatGPT
 
-3. Log into your Gelmi platform.
+    **Windows:**
+    ```sh
+    "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9333 --user-data-dir="C:\selenium_chrome_profile_2"
+    ```
 
-4. Minimize mouse interactions to ensure a smooth process while the script is running.
+    **macOS:**
+    ```sh
+    /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9333 --user-data-dir="/Users/<your-username>/selenium_chrome_profile_2"
+    ```
+
+    **Linux:**
+    ```sh
+    google-chrome --remote-debugging-port=9333 --user-data-dir="/home/<your-username>/selenium_chrome_profile_2"
+    ```
+
+3. Log into your Gemini account on the first chrome window.
+
+4. Log into your ChatGPT account on the second chrome window.
+
+5. Ensure you have the libraries in `requirements.txt` installed into your python environment.
+
+6. Open 2 termninal sessions, navigate to the root project directory where the scripts `gemini.py` and `chatgpt.py` are located and run them separately in the 2 terminals.
+
+**NOTE:** _Completely minimize mouse interactions to ensure a smooth process while the script is/are running as the script will mostly use the keyboard to type the file path when uploading files. If you're using the mouse elsewhere, the keyboard, will attempt to type the path of the file at wherever you focused the mouse instead of the web file input form popup. As it stands, both Gemini and GPT platforms don't make it possible to upload files using automated scripts, that's why I had to resort to the use of keyboard, in case you were wondering why. :)_
 
 ## Configuration
 
-Create a `jobs.json` file in the script directory with the following structure:
+Create a `jobs.json` file in the script's directory with the structure below. You will be populating this file will your various prompts and file paths because these is where both `gemini.py` and `chatgpt.py` will be reading your inputs from:
 
 ```json
 {
-    "rater_id": 000,
+    "rater_id": 000, # Your unique rater id
     "tasks": [
         {
-            "task_id": "00",
+            "task_id": "100", // ID assigned to that row on google sheet
+            // The script uploads all your files in the beginning of the chat.
+            // So currently you won't be uploading different files per turn, all will be 
+            // combined and uploaded at the very beginning of the chat session.
             "files": [
                 "relative_file_path_1",
                 "relative_file_path_2",
@@ -50,14 +77,31 @@ Create a `jobs.json` file in the script directory with the following structure:
                 "User Prompt 2",
                 ...
             ]
+        },
+        {
+            "task_id": "101", // ID assigned to that row on google sheet
+            // The script uploads all your files in the beginning of the chat.
+            // So currently you won't be uploading different files per turn, all will be 
+            // combined and uploaded at the very beginning of the chat session.
+            "files": [
+                "relative_file_path_1",
+                "relative_file_path_2",
+                ...
+            ],
+            "prompts": [
+                "User Prompt 1",
+                "User Prompt 2",
+                "User Prompt 3",
+                ...
+            ]
         }
     ]
 }
 ```
 
-- **rater_id**: The unique ID of the user.
+- **rater_id**: The unique number assigned to the rater.
 - **tasks**: A list of dictionaries, each representing a task.
-  - **task_id**: A unique identifier for each task.
+  - **task_id**: The ID number given to that task on the excel sheet.
   - **files**: A list of file names relative to the script directory.
   - **prompts**: A list of prompt strings. The first prompt should be entered first, followed by the second, and so on.
 
