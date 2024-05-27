@@ -10,4 +10,3 @@ logs.txt
 *.json
 *.csv
 *.xlsx
-!jobs.json
