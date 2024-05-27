@@ -68,8 +68,10 @@ class IPYNBGenerator:
                 if block["content"].strip():
                     if block["type"] == "code":
                         cells.append(new_code_cell(block["content"].strip()))
-                    elif block["type"] == "text" or block["type"] == "markdown":
+                    elif block["type"] == "text":
                         cells.append(new_markdown_cell(block["content"].strip()))
+                    elif block["type"] == "markdown":
+                        cells.append(new_markdown_cell( "```\n" + block["content"].strip()  + "\n```\n"))
 
         # Loop through the list of dictionaries and process each one
         for prompt_index, item in enumerate(text_dict_list):
