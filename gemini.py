@@ -159,10 +159,10 @@ for task in JOBS['tasks']:
             start_time_to_trigger_ice = time.time()
 
             # Wait for the element to be present
-            WebDriverWait(driver, 30).until(EC.presence_of_element_located(observed_element_locator))
+            WebDriverWait(driver, 60).until(EC.presence_of_element_located(observed_element_locator))
 
             # Wait for the text "Analyzing..." to appear in the element or its nested elements
-            WebDriverWait(driver, 60).until(TextInLastElement(observed_element_locator))
+            WebDriverWait(driver, 120).until(TextInLastElement(observed_element_locator))
 
             # End timing
             end_time_to_trigger_ice = time.time()
@@ -245,7 +245,7 @@ for task in JOBS['tasks']:
             with open('gemini-outputs.json', 'w') as out:
                 out.write(json.dumps(OUTPUT))
 
-            df = pd.DataFrame({
+            df = pd.DataFrame([{
                 'rater_id': RATER_ID,
                 'task_id': task_id,
                 'prompt': user_query,
@@ -253,7 +253,7 @@ for task in JOBS['tasks']:
                 'end_to_end_time': end_to_end_time,
                 'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
                 'timestamp': datetime.now()
-            })
+            }])
             ensure_directory_exists('time-tracksheet/')
             df.to_csv('time-tracksheet/gemini-prompts-time-track-sheet.csv', mode='a', index=False, header=False)
 

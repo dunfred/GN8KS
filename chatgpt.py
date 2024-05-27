@@ -254,7 +254,7 @@ for task in JOBS['tasks']:
             with open('gpt-outputs.json', 'w') as out:
                 out.write(json.dumps(OUTPUT))
 
-            df = pd.DataFrame({
+            df = pd.DataFrame([{
                 'rater_id': RATER_ID,
                 'task_id': task_id,
                 'prompt': user_query,
@@ -262,7 +262,7 @@ for task in JOBS['tasks']:
                 'end_to_end_time': end_to_end_time,
                 'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
                 'timestamp': datetime.now()
-            })
+            }])
             ensure_directory_exists('time-tracksheet/')
             df.to_csv('time-tracksheet/gpt-prompts-time-track-sheet.csv', mode='a', index=False, header=False)
 
