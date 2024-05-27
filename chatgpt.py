@@ -1,5 +1,3 @@
-import base64
-from datetime import datetime
 import os
 import time
 import json
@@ -8,27 +6,29 @@ import platform
 import requests
 import pandas as pd
 from pathlib import Path
+from pprint import pprint
+from datetime import datetime
 from selenium import webdriver
 from collections import defaultdict
+from bake_notebook import IPYNBGenerator
 from selenium.webdriver.common.by import By
+from pynput.keyboard import Key as PyKey, Controller
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
-from pynput.keyboard import Key as PyKey, Controller
-
-from dotenv import load_dotenv
-from pprint import pprint
-
-from bake_notebook import IPYNBGenerator
 from utils import GPTSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
 
+# Ensure the jobs.json file is added before proceeding.
+# You can also check README.md  file to see how the "jobs.json" 
+# needs supposed to be structured as well.
 
-# Load environment variables from .env file
-load_dotenv()
-
-with open('jobs.json', 'r') as jfp:
-    JOBS = json.loads(jfp.read())
+try:
+    with open('jobs.json', 'r') as jfp:
+        JOBS = json.loads(jfp.read())
+except Exception:
+    JOBS = {}
+    raise('Please make sure you "jobs.json" file is added to this directory before proceeding!')
 
 pprint(JOBS)
 
@@ -112,8 +112,7 @@ for task in JOBS['tasks']:
             prompt_elem.send_keys(user_query)
 
             # Find the file input element by its name or ID
-            WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
-            # is_first_file = True
+            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
 
             # Ensures all files are uploaded just once.
             if not files_uploaded:
@@ -122,16 +121,15 @@ for task in JOBS['tasks']:
                     WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
-                    upload_local_file_xpath = '//*[@id="radix-:ra:"]/div[4]'
+                    # Construct the XPath to find the upload file element with this id prefix and text match
+                    upload_local_file_xpath = '//*[starts-with(@id, "radix-:r")]/div[4][text()="Upload from computer"]'
+
                     try:
                         WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
                     except Exception:
-                        upload_local_file_xpath = '//*[@id="radix-:rb:"]/div[4]'
-                        try:
-                            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
-                        except Exception:
-                            upload_local_file_xpath = '//*[@id="radix-:r9:"]/div[4]'
-                            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
+                        upload_local_file_xpath = '//*[starts-with(@id, "radix-:r")]/div[3][text()="Upload from computer"]'
+                        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
+
                     # //*[@id="radix-:rb:"]/div[4]
                     local_file_input = driver.find_element(By.XPATH, upload_local_file_xpath)
                     local_file_input.click() 
@@ -141,7 +139,6 @@ for task in JOBS['tasks']:
                     keyboard.type(file)
                     keyboard.press(PyKey.enter)
                     keyboard.release(PyKey.enter)
-                    is_first_file = False
                     print(f'[x] Prompt {idx+1}: File Uploaded Successfully! - {file}')
 
                 # Make sure script doesn't attempt to upload files again.
@@ -163,9 +160,8 @@ for task in JOBS['tasks']:
             # Wait for the element to be present
             WebDriverWait(driver, 30).until(EC.presence_of_element_located(observed_element_locator))
 
-
             # Continue to wait for the specific text "Analyzed"
-            WebDriverWait(driver, 120).until(GPTSpecificTextInLastElement(
+            WebDriverWait(driver, 180).until(GPTSpecificTextInLastElement(
                 observed_element_locator, 
                 "Analyzed", 
                 idx+1,
@@ -186,7 +182,7 @@ for task in JOBS['tasks']:
             # Ensure the bot is truly done with analysis by looking for the 
             # menu popup that every completed conversation has
             turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "juice:-ml-3")]')
-            WebDriverWait(gpt_reponse_elem, 120).until(EC.presence_of_element_located(turn_menu_item_locator))
+            WebDriverWait(gpt_reponse_elem, 180).until(EC.presence_of_element_located(turn_menu_item_locator))
 
             # Grab all GPT code and text response blocks while maintaining order
             response_blocks = gpt_reponse_elem.find_elements(By.XPATH, './/div[(normalize-space(@class) = "overflow-hidden") or @data-message-author-role="assistant"]')
@@ -228,21 +224,21 @@ for task in JOBS['tasks']:
                     time.sleep(3)
 
             # Create and cleanup notebook string
-            notebook_str = """"""
+            html_str = """"""
             for blk in response_blocks:
-                try:
-                    code_element = blk.find_element(By.TAG_NAME, 'code')
-                    # Access the content of the <code> element
-                    code_content = code_element.text.strip()
-                    code_content = code_content.replace("\n", "\r\n")
-                    notebook_str += f"```python?code_reference&code_event_index=2\r\n{code_content}\r\n```"
+                html_str += '\n' + blk.get_attribute('innerHTML')
+                # try:
+                #     code_element = blk.find_element(By.TAG_NAME, 'code')
+                #     # Access the content of the <code> element
+                #     code_content = code_element.text.strip()
+                #     code_content = code_content.replace("\n", "\r\n")
+                #     notebook_str += f"```python?code_reference&code_event_index=2\r\n{code_content}\r\n```"
 
-                except:
-                    # print('No nested <code> element found.')
-                    blk_text = blk.text.strip()
-                    blk_text = blk_text.replace("\n", "\r\n")
-                    notebook_str += f"```text?code_stdout&code_event_index=3\r\n{blk_text}\r\n```"
-
+                # except:
+                #     # print('No nested <code> element found.')
+                #     blk_text = blk.text.strip()
+                #     blk_text = blk_text.replace("\n", "\r\n")
+                #     notebook_str += f"{blk_text}\r\n"
 
             update_prompt_output(
                 main_dict       = OUTPUT,
@@ -250,7 +246,7 @@ for task in JOBS['tasks']:
                 new_prompt_dict =   {
                     'prompt': user_query,
                     'end_to_end_time': end_to_end_time,
-                    'response': notebook_str,
+                    'html_response': html_str,
                     'prompt_files': prompt_files,
                     'timestamp': str(datetime.now())
                 }
@@ -267,7 +263,6 @@ for task in JOBS['tasks']:
                 'time_to_ice': 0,
                 'end_to_end_time': end_to_end_time,
                 'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
-                'response': notebook_str,
                 'timestamp': datetime.now()
             })
             
@@ -284,7 +279,7 @@ for task in JOBS['tasks']:
         )
 
         # Generate notebook
-        ipynb_gen.text_to_notebook(
+        ipynb_gen.html_to_notebook(
             OUTPUT[task_id]
         )
         print(f'[x] Completed Task ID: {task_id}.')
@@ -295,7 +290,7 @@ for task in JOBS['tasks']:
 
 
 
-'''
+''' FOR CHATGPT
 "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9333 --user-data-dir="C:\selenium_chrome_profile_2"
 
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9333 --user-data-dir="/Users/<your-username>/selenium_chrome_profile_2"

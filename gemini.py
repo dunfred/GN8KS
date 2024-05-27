@@ -16,19 +16,17 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from pynput.keyboard import Key as PyKey, Controller
-
-from dotenv import load_dotenv
 from pprint import pprint
 
 from bake_notebook import IPYNBGenerator
 from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
 
-
-# Load environment variables from .env file
-load_dotenv()
-
-with open('jobs.json', 'r') as jfp:
-    JOBS = json.loads(jfp.read())
+try:
+    with open('jobs.json', 'r') as jfp:
+        JOBS = json.loads(jfp.read())
+except Exception:
+    JOBS = {}
+    raise('Please make sure you "jobs.json" file is added to this directory before proceeding!')
 
 pprint(JOBS)
 
@@ -211,8 +209,8 @@ for task in JOBS['tasks']:
             more_options_menu.click()
 
             # Finding and clicking the actual copy button
-            copy_response_xpath = f"//*[contains(@id, '{main_container_tag_name}-menu-panel-')]/div/div/button"
-            WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, copy_response_xpath)))
+            copy_response_xpath = "//*[contains(@id, 'mat-menu-panel-')]/div/div/button"
+            WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, copy_response_xpath)))
             copy_response_button = response_footer_element.find_element(By.XPATH, copy_response_xpath)
             copy_response_button.click()
 
@@ -300,7 +298,7 @@ for task in JOBS['tasks']:
 
 
 
-'''
+''' FOR GEMINI
 "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\selenium_chrome_profile"
 
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir="/Users/<your-username>/selenium_chrome_profile"
