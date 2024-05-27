@@ -7,3 +7,5 @@ logs.txt
 *.jpg
 *.jpeg
 *.ipynb
+*.json
+!jobs.json

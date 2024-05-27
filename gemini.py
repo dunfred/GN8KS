@@ -238,7 +238,7 @@ for task in JOBS['tasks']:
             })
             
             # Create local update/backup
-            with open('outputs.json', 'w') as out:
+            with open('gemini-outputs.json', 'w') as out:
                 out.write(json.dumps(OUTPUT))
 
         # Instantiate class for generating notebook after all prompts are done

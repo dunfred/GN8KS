@@ -3,17 +3,15 @@ import os
 import time
 import json
 import random
-import pyperclip
 import platform
 from pathlib import Path
+import requests
 from selenium import webdriver
 from collections import defaultdict
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.service import Service as ChromeService
 from pynput.keyboard import Key as PyKey, Controller
 
@@ -21,7 +19,7 @@ from dotenv import load_dotenv
 from pprint import pprint
 
 from bake_notebook import IPYNBGenerator
-from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, ensure_directory_exists, save_svg_to_png
+from utils import GPTSpecificTextInLastElement, ensure_directory_exists
 
 
 # Load environment variables from .env file
@@ -66,7 +64,7 @@ print('Chrome Driver Path:', chromedriver_path)
 
 # Configure Chrome options
 options = Options()
-options.add_experimental_option("debuggerAddress", "localhost:9222") # Your Gemini's chrome profile port would be on port "9222"
+options.add_experimental_option("debuggerAddress", "localhost:9333") # Your GPT's chrome profile port would be on port "9222"
 options.add_argument("--disable-blink-features=AutomationControlled")
 
 # Function to introduce random delays
@@ -84,7 +82,7 @@ for task in JOBS['tasks']:
     prompt_files   = task['files']
     files_uploaded = False
 
-    if task['prompts']: # Continue if prompts are available
+    if len(task['prompts']) >= 1: # Continue if prompts are available
         # Ensure the output directory exists
         base_dir = os.path.dirname(os.path.abspath(__file__))
         output_dir = os.path.join(base_dir, 'notebooks', f"ID_{task_id}")
@@ -92,13 +90,13 @@ for task in JOBS['tasks']:
 
         print(f'[x] Started Task ID: {task_id}.')
 
-        # Open Gemini
-        driver.get('https://gemini.google.com/')
+        # Open GPT
+        driver.get('https://chatgpt.com/')
 
         for idx, user_query in enumerate(task['prompts']):
             print(f'[x] {task_id} - Starting Prompt {idx+1}: {user_query}')
             # Find the input text field elem
-            input_text_elem_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
+            input_text_elem_xpath = '//*[@id="prompt-textarea"]'
             WebDriverWait(driver, 120).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
 
             # Generate full path to all prompt files
@@ -109,24 +107,29 @@ for task in JOBS['tasks']:
 
             # Find the file input element by its name or ID
             WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
-            is_first_file = True
+            # is_first_file = True
 
             # Ensures all files are uploaded just once.
             if not files_uploaded:
                 for file in files_str:
-                    if is_first_file:
-                        upload_files_elem_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
-                    else:
-                        upload_files_elem_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/uploader/div[1]/div/button'
-                    
+                    upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
                     WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
-                    
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
-                    upload_local_file_xpath = '//*[@id="file-uploader-local"]'
-                    WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
+                    upload_local_file_xpath = '//*[@id="radix-:ra:"]/div[4]'
+                    try:
+                        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
+                    except Exception:
+                        upload_local_file_xpath = '//*[@id="radix-:rb:"]/div[4]'
+                        try:
+                            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
+                        except Exception:
+                            upload_local_file_xpath = '//*[@id="radix-:r9:"]/div[4]'
+                            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
+                    # //*[@id="radix-:rb:"]/div[4]
                     local_file_input = driver.find_element(By.XPATH, upload_local_file_xpath)
                     local_file_input.click() 
+
                     time.sleep(3)
                     keyboard = Controller()
                     keyboard.type(file)
@@ -134,118 +137,123 @@ for task in JOBS['tasks']:
                     keyboard.release(PyKey.enter)
                     is_first_file = False
                     print(f'[x] Prompt {idx+1}: File Uploaded Successfully! - {file}')
+
                 # Make sure script doesn't attempt to upload files again.
                 files_uploaded = True
                 time.sleep(3)
 
             # Submit the query.
-            submit_prompt_btn_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
+            submit_prompt_btn_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/button'
 
-            try:
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
-            except Exception:
-                submit_prompt_btn_xpath = '//*[@id="app-root"]/main/side-navigation-v2/bard-sidenav-container/bard-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/div/button'
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
             submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
             submit_prompt_btn.click()
 
             # Define the locator for the element you want to observe
-            observed_element_locator = (By.CSS_SELECTOR, "[class^='response-container-content']")
-            start_time_to_trigger_ice = time.time()
+            observed_element_locator = (By.CSS_SELECTOR, '[class*="group/conversation-turn"][class*="agent-turn"]')
+            start_time = time.time()
 
             # Wait for the element to be present
             WebDriverWait(driver, 30).until(EC.presence_of_element_located(observed_element_locator))
 
-            # Wait for the text "Analyzing..." to appear in the element or its nested elements
-            WebDriverWait(driver, 60).until(TextInLastElement(observed_element_locator))
 
-            # End timing
-            end_time_to_trigger_ice = time.time()
-
-            # Calculate the elapsed time
-            time_to_trigger_ice = round(end_time_to_trigger_ice - start_time_to_trigger_ice, 2)
-            print(f"[x] Prompt {idx+1} Time To Trigger ICE: {time_to_trigger_ice} seconds")
-
-            # Continue to wait for the specific text "Analysis complete"
-            WebDriverWait(driver, 600).until(SpecificTextInLastElement(observed_element_locator, "Analysis complete"))
+            # Continue to wait for the specific text "Analyzed"
+            WebDriverWait(driver, 120).until(GPTSpecificTextInLastElement(
+                observed_element_locator, 
+                "Analyzed", 
+                idx+1,
+                turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "juice:-ml-3")]')
+                ))
 
             # Record the time when "Analysis complete" appears
             analysis_complete_time = time.time()
-            end_to_end_time = round(analysis_complete_time - start_time_to_trigger_ice, 2)
+            end_to_end_time = round(analysis_complete_time - start_time, 2)
             print(f"[x] Prompt {idx+1} End To End Time: {end_to_end_time} seconds")
 
             elements = driver.find_elements(*observed_element_locator)
             if elements:
-                gemini_reponse_elem = elements[-1]
+                gpt_reponse_elem = elements[-1]
             else:
-                gemini_reponse_elem = None
+                gpt_reponse_elem = None
 
-            # Define the locator for the footer elements
-            response_footer_locator = (By.XPATH, "following-sibling::div[contains(@class, 'response-container-footer')]")
+            # Ensure the bot is truly done with analysis by looking for the 
+            # menu popup that every completed conversation has
+            turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "juice:-ml-3")]')
+            WebDriverWait(gpt_reponse_elem, 120).until(EC.presence_of_element_located(turn_menu_item_locator))
 
-            # Wait for the last footer element to be present
-            response_footer_element = WebDriverWait(driver, 180).until(LastFooterElement(observed_element_locator, "response-container-footer"))
-            # print("RESPONSE FOOTER ELEM:", response_footer_element)
-
-            # Finding and clicking menu action bar to show copy button
-            time.sleep(3)
-            WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, ".//message-actions/div/div/div[2]/button")))
-            more_options_menu = response_footer_element.find_element(By.XPATH, ".//message-actions/div/div/div[2]/button")
-            more_options_menu.click()
-
-            # Finding and clicking the actual copy button
-            copy_response_xpath = "//*[contains(@id, 'mat-menu-panel-')]/div/div/button"
-            WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, copy_response_xpath)))
-            copy_response_button = response_footer_element.find_element(By.XPATH, copy_response_xpath)
-            copy_response_button.click()
-
-            # Use JavaScript to get the attribute value
-            response_ngcontent_id = driver.execute_script("return arguments[0].getAttributeNames().find(name => name.startsWith('_ngcontent-'))", gemini_reponse_elem)
-            print("Response ID:", response_ngcontent_id)
+            # Grab all GPT code and text response blocks while maintaining order
+            response_blocks = gpt_reponse_elem.find_elements(By.XPATH, './/div[(normalize-space(@class) = "overflow-hidden") or @data-message-author-role="assistant"]')
+            # Sort in the order they appear on screen
+            response_blocks = sorted(response_blocks, key=lambda x: x.location['y'])
 
             # Find all img elements within the response element that have the ngcontent attribute
-            plot_images = gemini_reponse_elem.find_elements(By.TAG_NAME, 'img')
-            plot_images = [i for i in plot_images if str(i.get_attribute('alt')).lower().strip() == "chart shown as an image"]
+            plot_images = gpt_reponse_elem.find_elements(By.TAG_NAME, 'img')
+            plot_images = [i for i in plot_images if str(i.get_attribute('alt')).lower().strip() == "output image"]
 
-            # Iterate through each plot image and save it
-            for img_idx, img in enumerate(plot_images):
-                # Get the src attribute, which contains the base64 encoded image
-                src = img.get_attribute('src')
-                alt = img.get_attribute('alt')
+            if plot_images:
+                # Iterate through each plot image and save it
+                for img_idx, img in enumerate(plot_images):
+                    # Get the src attribute, which contains the base64 encoded image
+                    src = img.get_attribute('src')
 
-                # Remove the base64 prefix
-                if 'base64,' in src:
-                    base64_data = src.split('base64,')[1]
-                else:
-                    base64_data = src
+                    # Download the image
+                    response = requests.get(src)
 
-                # Decode the base64 data and save the image
-                img_data = base64.b64decode(base64_data)
-                file_path = os.path.join(output_dir, f'Gemini_userquery{idx+1}_plot{img_idx+1}.png')
+                    file_path = os.path.join(output_dir, f'GPT_userquery{idx+1}_plot{img_idx+1}.png')
 
-                with open(file_path, 'wb') as file:
-                    file.write(img_data)
+                    # Save the image to the specified path
+                    with open(file_path, 'wb') as file:
+                        file.write(response.content)
 
-            time.sleep(3)
+                time.sleep(3)
+            else:
+                plot_images = gpt_reponse_elem.find_elements(By.XPATH, '''
+                    .//div[
+                        @class = "mb-3 max-w-[80%]"
+                    ]
+                ''')
+                print('[x] Found', len(plot_images), 'Images')
 
+                if plot_images:
+                    for img_idx, img in enumerate(plot_images):
+                        file_path = os.path.join(output_dir, f'GPT_userquery{idx+1}_plot{img_idx+1}.png')
+                        img.screenshot(file_path)
+                    time.sleep(3)
+
+            # Create and cleanup notebook string
+            notebook_str = """"""
+            for blk in response_blocks:
+                try:
+                    code_element = blk.find_element(By.TAG_NAME, 'code')
+                    # Access the content of the <code> element
+                    code_content = code_element.text.strip()
+                    code_content = code_content.replace("\n", "\r\n")
+                    notebook_str += f"```python?code_reference&code_event_index=2\r\n{code_content}\r\n```"
+
+                except:
+                    # print('No nested <code> element found.')
+                    blk_text = blk.text.strip()
+                    blk_text = blk_text.replace("\n", "\r\n")
+                    notebook_str += f"```text?code_stdout&code_event_index=3\r\n{blk_text}\r\n```"
+                
             OUTPUT[task_id].append({
                 'prompt': user_query,
-                'time_to_ice': time_to_trigger_ice,
                 'end_to_end_time': end_to_end_time,
-                'response': pyperclip.paste(),
+                'response': notebook_str,
                 'prompt_files': prompt_files
             })
             
             # Create local update/backup
-            with open('outputs.json', 'w') as out:
+            with open('gpt-outputs.json', 'w') as out:
                 out.write(json.dumps(OUTPUT))
 
         # Instantiate class for generating notebook after all prompts are done
         ipynb_gen = IPYNBGenerator(
             output_path = output_dir,
             rater_id    = RATER_ID,
-            task_id     = task_id
+            task_id     = task_id,
+            nb_for="GPT" # Need to override this from "Gemini" to "GPT"
         )
 
         # Generate notebook
@@ -261,10 +269,10 @@ for task in JOBS['tasks']:
 
 
 '''
-"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\selenium_chrome_profile"
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9333 --user-data-dir="C:\selenium_chrome_profile_2"
 
-/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir="/Users/<your-username>/selenium_chrome_profile"
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9333 --user-data-dir="/Users/<your-username>/selenium_chrome_profile_2"
 
-google-chrome --remote-debugging-port=9222 --user-data-dir="/home/<your-username>/selenium_chrome_profile"
+google-chrome --remote-debugging-port=9333 --user-data-dir="/home/<your-username>/selenium_chrome_profile_2"
 
 '''
