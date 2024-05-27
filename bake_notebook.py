@@ -89,6 +89,6 @@ class IPYNBGenerator:
 
         # Save the notebook to a file
         filepath = os.path.join(self.output_path, f"{self.nb_for}_rater_{self.rater_id}_ID_{self.task_id}.ipynb")
-        with open(filepath, 'w') as f:
+        with open(filepath, 'w', encoding='utf-8') as f:
             write(nb, f)
         print(f"Notebook has been saved to {filepath}")

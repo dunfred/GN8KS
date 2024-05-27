@@ -8,4 +8,6 @@ logs.txt
 *.jpeg
 *.ipynb
 *.json
+*.csv
+*.xlsx
 !jobs.json

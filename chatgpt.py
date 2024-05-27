@@ -1,11 +1,13 @@
 import base64
+from datetime import datetime
 import os
 import time
 import json
 import random
 import platform
-from pathlib import Path
 import requests
+import pandas as pd
+from pathlib import Path
 from selenium import webdriver
 from collections import defaultdict
 from selenium.webdriver.common.by import By
@@ -30,7 +32,11 @@ with open('jobs.json', 'r') as jfp:
 
 pprint(JOBS)
 
-OUTPUT = defaultdict(list)
+try:
+    with open('gpt-outputs.json', 'r') as of:
+        OUTPUT = defaultdict(list, json.loads(of.read())) # Convert to defaultdict type
+except Exception:
+    OUTPUT = defaultdict(list)
 
 RATER_ID = JOBS['rater_id']
 
@@ -247,6 +253,18 @@ for task in JOBS['tasks']:
             # Create local update/backup
             with open('gpt-outputs.json', 'w') as out:
                 out.write(json.dumps(OUTPUT))
+
+            df = pd.DataFrame({
+                'rater_id': RATER_ID,
+                'task_id': task_id,
+                'prompt': user_query,
+                'time_to_ice': 0,
+                'end_to_end_time': end_to_end_time,
+                'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
+                'timestamp': datetime.now()
+            })
+            ensure_directory_exists('time-tracksheet/')
+            df.to_csv('time-tracksheet/gpt-prompts-time-track-sheet.csv', mode='a', index=False, header=False)
 
         # Instantiate class for generating notebook after all prompts are done
         ipynb_gen = IPYNBGenerator(
