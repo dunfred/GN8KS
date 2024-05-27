@@ -58,41 +58,41 @@ This project aims to automate the process of running and documenting the results
 
 Create a `jobs.json` file in the script's directory with the structure below. You will be populating this file will your various prompts and file paths because these is where both `gemini.py` and `chatgpt.py` will be reading your inputs from:
 
-```json
+```python
 {
-    "rater_id": 000, # Your unique rater id
+    "rater_id": "000", # Your unique rater id
     "tasks": [
         {
-            "task_id": "100", // ID assigned to that row on google sheet
-            // The script uploads all your files in the beginning of the chat.
-            // So currently you won't be uploading different files per turn, all will be 
-            // combined and uploaded at the very beginning of the chat session.
+            "task_id": "100", # ID assigned to that row on google sheet
+            # The script uploads all your files in the beginning of the chat.
+            # So currently you won't be uploading different files per turn, all will be 
+            # combined and uploaded at the very beginning of the chat session.
             "files": [
                 "relative_file_path_1",
                 "relative_file_path_2",
-                ...
+                # ...
             ],
             "prompts": [
                 "User Prompt 1",
                 "User Prompt 2",
-                ...
+                # ...
             ]
         },
         {
-            "task_id": "101", // ID assigned to that row on google sheet
-            // The script uploads all your files in the beginning of the chat.
-            // So currently you won't be uploading different files per turn, all will be 
-            // combined and uploaded at the very beginning of the chat session.
+            "task_id": "101", # ID assigned to that row on google sheet
+            # The script uploads all your files in the beginning of the chat.
+            # So currently you won't be uploading different files per turn, all will be 
+            # combined and uploaded at the very beginning of the chat session.
             "files": [
                 "relative_file_path_1",
                 "relative_file_path_2",
-                ...
+                # ...
             ],
             "prompts": [
                 "User Prompt 1",
                 "User Prompt 2",
                 "User Prompt 3",
-                ...
+                # ...
             ]
         }
     ]
