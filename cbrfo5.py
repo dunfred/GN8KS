@@ -167,6 +167,10 @@ for task in JOBS['tasks']:
             notebook_str = """"""
             is_first_turn = p_idx==0
 
+            # Copy output dir
+            resp_dir_path = os.path.join(output_dir, f"copy_{copy_index+1}")
+            ensure_directory_exists(resp_dir_path)
+
             if is_first_turn:
                 # Add this turn's prompt
                 print('[x] Is first turn')
@@ -210,38 +214,56 @@ for task in JOBS['tasks']:
                         "role": "user",
                         "parts": [{ "text": prompt } ]
                     })
+                response = requests.post(url, headers=headers, data=json.dumps(data))
+                print('[x] MODEL RESPONSE RECEIVED',response)
 
             else:
-                # Add this turn's prompt
-                data['contents'].append({
-                        "role": "user",
-                    "parts": [{ "text": prompt } ]
-                })
+                print('[x] Loading previous turn data')
+                with open(f"{resp_dir_path}/response-turn{p_idx}.json","r") as f: # Read previous turn data
+                    prev_response = json.loads(f.read())
+                    # Grab the previous turn data and append new query data to it
+                    contents_of_prev_turn = prev_response["candidates"][0]["content"]
+                    contents_of_prev_turn['parts'] = [d for d in contents_of_prev_turn['parts'] if 'fileData' not in d]
 
-            response = requests.post(url, headers=headers, data=json.dumps(data))
-            print('[x] MODEL RESPONSE RECEIVED',response)
+                    # New query
+                    new_query = {
+                        "role": "user",
+                        "parts": [
+                            {"text": prompt},
+                        ]
+                    }
+
+                    # append model response and new query
+                    data["contents"].append(contents_of_prev_turn)
+                    data["contents"].append(new_query)
+
+                    response = requests.post(url, headers=headers, data=json.dumps(data))
+                    print('[x] MODEL RESPONSE RECEIVED',response)
 
             # Save the Response in a Json File
-            resp_file_path = os.path.join(output_dir, f"copy_{copy_index+1}")
-            ensure_directory_exists(resp_file_path)
-            with open(f"{resp_file_path}/response-turn{p_idx+1}.json","w") as f:
+            with open(f"{resp_dir_path}/response-turn{p_idx+1}.json","w") as f:
                 f.write(json.dumps(response.json(),indent=4))
 
             # Parse and Generate Notebook String from Turn Output
-            for i in response.json()["candidates"][0]["content"]["parts"][3]["structuredData"]["advancedIceFlow"]["iceFlowState"]["events"]:
-                if i['eventTag'] in [
-                    'EVENT_TAG_CODE',
-                    'EVENT_TAG_CODE_MSG_OUT',
-                    'EVENT_TAG_CODE_ERROR_OUT',
-                    'EVENT_TAG_OUTPUT_TO_USER',
-                ]:
-                    if i['eventTag'] == 'EVENT_TAG_CODE':
-                        notebook_str += f"```python?code_reference&code_event_index=2\n{i['eventMsg']}\n```\n"
+            try:
+                for i in response.json()["candidates"][0]["content"]["parts"][3]["structuredData"]["advancedIceFlow"]["iceFlowState"]["events"]:
+                    if i['eventTag'] in [
+                        'EVENT_TAG_CODE',
+                        'EVENT_TAG_CODE_MSG_OUT',
+                        'EVENT_TAG_CODE_ERROR_OUT',
+                        'EVENT_TAG_OUTPUT_TO_USER',
+                    ]:
+                        if i['eventTag'] == 'EVENT_TAG_CODE':
+                            notebook_str += f"```python?code_reference&code_event_index=2\n{i['eventMsg']}\n```\n"
 
-                    elif i['eventTag'] in ['EVENT_TAG_CODE_MSG_OUT','EVENT_TAG_CODE_ERROR_OUT']:
-                        notebook_str += f"```text?code_stdout&code_event_index=2\n{i['eventMsg']}\n```\n"
-                    else:
-                        notebook_str += i['eventMsg'] + "\n"
+                        elif i['eventTag'] in ['EVENT_TAG_CODE_MSG_OUT','EVENT_TAG_CODE_ERROR_OUT']:
+                            notebook_str += f"```text?code_stdout&code_event_index=2\n{i['eventMsg']}\n```\n"
+                        else:
+                            notebook_str += i['eventMsg'] + "\n"
+            except IndexError:
+                # Model probably encountered an error when executing prompt
+                event_msg = response.json()["candidates"][0]["content"]["parts"][0]['text']
+                notebook_str += event_msg
 
             # Update the local backup data with latest prompt data if already exists, else add as new
             update_prompt_output(
