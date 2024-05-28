@@ -201,7 +201,7 @@ for task in JOBS['tasks']:
             WebDriverWait(driver, 60).until(EC.presence_of_element_located(observed_element_locator))
 
             # Wait for the text "Analyzing..." to appear in the element or its nested elements
-            WebDriverWait(driver, 120).until(TextInLastElement(observed_element_locator))
+            WebDriverWait(driver, 210).until(TextInLastElement(observed_element_locator))
 
             # End timing
             end_time_to_trigger_ice = time.time()
