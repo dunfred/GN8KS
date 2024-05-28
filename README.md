@@ -52,7 +52,9 @@ This project aims to automate the process of running and documenting the results
 
 5. Ensure you have the libraries in `requirements.txt` installed into your python environment.
 
-6. Open 2 termninal sessions, navigate to the root project directory where the scripts `gemini.py` and `chatgpt.py` are located and run them separately in the 2 terminals.
+6. Open 2 termninal sessions, navigate to the root project directory where the scripts `gemini.py` and `chatgpt.py` are located and run them separately in the 2 terminals. 
+
+7. From my personal experience, if your computer's screen is not big enough to have the 2 Chrome browser windows opened at maximum width side by side, you're better off executing the scripts one at a time so one brower can have enough space. This is so the 2 browsers don't overlap each other and mistakenly start clicking items in the other browser. You can first run `chatgpt.py` and wait for it finish executing before you do same `gemini.py` or vice-versa. :)
 
 **NOTE:** _Completely minimize mouse interactions to ensure a smooth process while the script is/are running as the script will mostly use the keyboard to type the file path when uploading files. If you're using the mouse elsewhere, the keyboard, will attempt to type the path of the file at wherever you focused the mouse instead of the web file input form popup. As it stands, both Gemini and GPT platforms don't make it possible to upload files using automated scripts, that's why I had to resort to the use of keyboard, in case you were wondering why. :)_
 
