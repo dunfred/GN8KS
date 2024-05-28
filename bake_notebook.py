@@ -78,10 +78,11 @@ class IPYNBGenerator:
             user_query = item['prompt']
             notebook_string = item['response']
             prompt_files_str = ",".join([f.split('/')[-1] for f in item['prompt_files']])
+            prompt_file_urls = ", ".join(item["prompt_file_urls"])
             
             # Add a text cell for the user query
             if prompt_index == 0:
-                cells.append(new_markdown_cell(f'**User Query:** {user_query}\n\nturn: {prompt_index+1}\n\nfile_name: "{prompt_files_str}"\n\nfile_path: ""'))
+                cells.append(new_markdown_cell(f'**User Query:** {user_query}\n\nturn: {prompt_index+1}\n\nfile_name: "{prompt_files_str}"\n\nfile_path: "{prompt_file_urls}"'))
             else:
                 cells.append(new_markdown_cell(f"**User Query:** {user_query}\n\nturn: {prompt_index+1}"))
 
@@ -106,14 +107,16 @@ class IPYNBGenerator:
             user_query = item['prompt']
             html_content = item['html_response']
             prompt_files_str = ",".join([f.split('/')[-1] for f in item['prompt_files']])
-            
+            c_prompt_file_urls = ", ".join(item["prompt_file_urls"])
+
             # Add a text cell for the user query
             if prompt_index == 0:
                 notebook_cells.append({
                         "cell_type": "markdown",
                         "metadata": {},
-                        "source": [f'**User Query:** {user_query}\n\nturn: {prompt_index+1}\n\nfile_name: "{prompt_files_str}"\n\nfile_path: ""\n']
+                        "source": [f'**User Query:** {user_query}\n\nturn: {prompt_index+1}\n\nfile_name: "{prompt_files_str}"\n\nfile_path: "{c_prompt_file_urls}"\n']
                     })
+
             else:
                 notebook_cells.append({
                         "cell_type": "markdown",
@@ -137,7 +140,7 @@ class IPYNBGenerator:
                         notebook_cells.append({
                             "cell_type": "code",
                             "metadata": {},
-                            "source": code_content.get_text().splitlines()
+                            "source": [cl + '\n' for cl in code_content.get_text().splitlines()]
                         })
                     else:
                          notebook_cells.append({
