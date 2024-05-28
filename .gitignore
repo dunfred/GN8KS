@@ -10,3 +10,5 @@ logs.txt
 *.json
 *.csv
 *.xlsx
+.env
+*.env
