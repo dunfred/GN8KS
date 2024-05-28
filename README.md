@@ -2,6 +2,8 @@
 
 This project aims to automate the process of running and documenting the results of various prompts and storing them into notebooks. 
 
+# Gemini and GPT Notebook Generator
+
 ## Requirements
 
 - Google Chrome version `125.0.6422.78` or higher
@@ -56,8 +58,9 @@ This project aims to automate the process of running and documenting the results
 
 ## Configuration
 
-Create a `jobs.json` file in the script's directory with the structure below. You will be populating this file will your various prompts and file paths because these is where both `gemini.py` and `chatgpt.py` will be reading your inputs from:
+Create a `jobs.json` file in the script's directory with the structure below. You will be populating this file with your various prompts and file paths because these is where both `gemini.py` and `chatgpt.py` will be reading your inputs from:
 
+**jobs.json**
 ```python
 {
     "rater_id": "000", # Your unique rater id
@@ -122,6 +125,81 @@ Once Chrome is running in debug mode and you are logged into Gemini:
 
 1. Place your `jobs.json` file in the script directory.
 2. Run the script to start the automation process.
+
+
+#
+# CLI Based Reproducibility Frequency out of 5
+
+This also another automated script for running tasks/prompts through cli 5 times and storing all results into thier respective directories.
+
+## Configuration
+
+Create a `reproducible-jobs.json` file in the script's directory with the structure below. You will be populating this file with your various prompts your're trying to run 5 times. The `cbrfo5.py` script file will be reading your inputs that json file:
+
+**reproducible-jobs.json**
+```python
+{
+    "rater_id": "000", # Your unique rater id
+    "tasks": [
+        {
+            "task_id": "100", # ID assigned to that row on google sheet
+            # The script uploads all your files in the beginning of the chat.
+            # So currently you won't be uploading different files per turn, all will be 
+            # combined and uploaded at the very beginning of the chat session.
+            "files": [
+                "relative_file_path_1",
+                # ...
+            ],
+            "prompts": [
+                "User Prompt 1",
+                "User Prompt 2",
+                
+                # ...
+            ]
+        },
+        {
+            "task_id": "101", # ID assigned to that row on google sheet
+            # The script uploads all your files in the beginning of the chat.
+            # So currently you won't be uploading different files per turn, all will be 
+            # combined and uploaded at the very beginning of the chat session.
+            "files": [
+                "relative_file_path_1",
+                "relative_file_path_2"
+                # ...
+            ],
+            "prompts": [
+                "User Prompt 1",
+                "User Prompt 2",
+                "User Prompt 3",
+                # ...
+            ]
+        }
+    ]
+}
+```
+
+- **rater_id**: The unique number assigned to the rater.
+- **tasks**: A list of dictionaries, each representing a task.
+  - **task_id**: The ID number given to that task on the excel sheet.
+  - **files**: A list of file names relative to the script directory.
+  - **prompts**: A list of prompt strings. The first prompt should be entered first, followed by the second, and so on.
+
+There can be an infinite number of tasks.
+
+## Usage
+
+Once you have populated the `reproducible-jobs.json` with your details:
+
+1. First, add a `.env` file to the project's directory and provide the `API_KEY` and `MODEL` environment values, these will be required in other to make requests to the model's API.
+- **.env**
+    ```env
+    API_KEY="add_api_key_here"
+
+    MODEL="add_model_name_here"
+    ```
+2. Make sure your `reproducible-jobs.json` file is in the same directory as the `cbrfo5.py` file.
+3. Run the cmd `python cbrfo5.py` to start the generating copies.
+4. All various outputs generated will be located in a directory called `reproduced_outputs/ID_[task_id]`.
 
 ## Author
 
