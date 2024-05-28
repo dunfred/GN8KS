@@ -22,10 +22,13 @@ def update_prompt_output(main_dict, id_key, new_prompt_dict):
     """
     if id_key not in main_dict:
         main_dict[id_key] = []
-    
+
     found = False
     for i, item in enumerate(main_dict[id_key]):
-        if item['prompt'] == new_prompt_dict['prompt'] and item['prompt_files'] == new_prompt_dict['prompt_files']:
+        if item['prompt'] == new_prompt_dict['prompt'] and \
+            item['prompt_files'] == new_prompt_dict['prompt_files'] and \
+            item['prompt_file_urls'] == new_prompt_dict['prompt_file_urls']:
+
             main_dict[id_key][i] = new_prompt_dict
             found = True
             break
@@ -70,7 +73,7 @@ class TextInLastElement:
         return False
 
 # Custom expected condition to wait for specific text in the last element that holds Gemini's response
-class SpecificTextInLastElement:
+class GeminiSpecificTextInLastElement:
     def __init__(self, locator, text):
         self.locator = locator
         self.text = text
@@ -79,7 +82,7 @@ class SpecificTextInLastElement:
         elements = driver.find_elements(*self.locator)
         if elements:
             last_element = elements[-1]
-            if self.text in last_element.text:
+            if self.text in last_element.text or "Analysis unsuccessful" in last_element.text:
                 return last_element
         return False
 

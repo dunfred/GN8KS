@@ -19,7 +19,34 @@ from pynput.keyboard import Key as PyKey, Controller
 from pprint import pprint
 
 from bake_notebook import IPYNBGenerator
-from utils import LastFooterElement, TextInLastElement, SpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
+from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
+
+''' SAMPLE `jobs.json` file template
+{
+    "rater_id": "000", # Your unique rater id
+    "tasks": [
+        {
+            "task_id": "100", # ID assigned to that row on google sheet
+            # The script uploads all your files in the beginning of the chat.
+            # So currently you won't be uploading different files per turn, all will be 
+            # combined and uploaded at the very beginning of the chat session.
+            "files": [
+                {
+                    "path": "relative_file_path_1",
+                    "url": "https://url_of_file"
+                },
+                # ...
+            ],
+            "prompts": [
+                "User Prompt 1",
+                "User Prompt 2",
+                
+                # ...
+            ]
+        }
+    ]
+}
+'''
 
 try:
     with open('jobs.json', 'r') as jfp:
@@ -38,8 +65,8 @@ except Exception:
 
 RATER_ID = JOBS['rater_id']
 
-print(platform.system())
-print(platform.machine())
+print("OS:\t",platform.system())
+print("Type:\t",platform.machine())
 
 def get_chromedriver_path():
     # Supports linux64, mac-arm64, mac-x64, win32 and win64 arc
@@ -82,8 +109,10 @@ driver = webdriver.Chrome(service=service, options=options)
 
 # Open a new session and run all prompts for each task/job
 for task in JOBS['tasks']:
-    task_id        = task['task_id']
-    prompt_files   = task['files']
+    task_id           = task['task_id']
+    prompt_files      = [f['path'] for f in task['files']]
+    prompt_file_urls = [f.get('url', "") for f in task['files']]
+
     files_uploaded = False
 
     if task['prompts']: # Continue if prompts are available
@@ -181,10 +210,10 @@ for task in JOBS['tasks']:
             time_to_trigger_ice = round(end_time_to_trigger_ice - start_time_to_trigger_ice, 2)
             print(f"[x] Prompt {idx+1} Time To Trigger ICE: {time_to_trigger_ice} seconds")
 
-            # Continue to wait for the specific text "Analysis complete"
-            WebDriverWait(driver, 600).until(SpecificTextInLastElement(observed_element_locator, "Analysis complete"))
+            # Continue to wait for the specific text "Analysis complete" for next 5 minutes
+            WebDriverWait(driver, 300).until(GeminiSpecificTextInLastElement(observed_element_locator, "Analysis complete"))
 
-            # Record the time when "Analysis complete" appears
+            # Record the time when "Analysis complete" or "Analysis unsuccessful" appears
             analysis_complete_time = time.time()
             end_to_end_time = round(analysis_complete_time - start_time_to_trigger_ice, 2)
             print(f"[x] Prompt {idx+1} End To End Time: {end_to_end_time} seconds")
@@ -216,7 +245,7 @@ for task in JOBS['tasks']:
 
             # Use JavaScript to get the attribute value
             response_ngcontent_id = driver.execute_script("return arguments[0].getAttributeNames().find(name => name.startsWith('_ngcontent-'))", gemini_reponse_elem)
-            print("Response ID:", response_ngcontent_id)
+            # print("Response ID:", response_ngcontent_id)
 
             # Find all img elements within the response element that have the ngcontent attribute
             plot_images = gemini_reponse_elem.find_elements(By.TAG_NAME, 'img')
@@ -255,6 +284,7 @@ for task in JOBS['tasks']:
                     'end_to_end_time': end_to_end_time,
                     'response': notebook_response,
                     'prompt_files': prompt_files,
+                    'prompt_file_urls': prompt_file_urls,
                     'timestamp': str(datetime.now())
                 }
             )
@@ -269,8 +299,9 @@ for task in JOBS['tasks']:
                 'prompt': user_query,
                 'time_to_ice': time_to_trigger_ice,
                 'end_to_end_time': end_to_end_time,
-                'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
                 'response': notebook_response,
+                'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
+                'prompt_file_urls': ", ".join(prompt_file_urls),
                 'timestamp': datetime.now()
             })
             ensure_directory_exists('time-tracksheet/')
@@ -290,7 +321,7 @@ for task in JOBS['tasks']:
         ipynb_gen.text_to_notebook(
             OUTPUT[task_id]
         )
-        print(f'[x] Completed Task ID: {task_id}.')
+        print(f'[x] Completed Task ID: {task_id}.\n\n')
 
 
 

@@ -23,6 +23,33 @@ from utils import GPTSpecificTextInLastElement, append_to_excel, ensure_director
 # You can also check README.md  file to see how the "jobs.json" 
 # needs supposed to be structured as well.
 
+''' SAMPLE `jobs.json` file template
+{
+    "rater_id": "000", # Your unique rater id
+    "tasks": [
+        {
+            "task_id": "100", # ID assigned to that row on google sheet
+            # The script uploads all your files in the beginning of the chat.
+            # So currently you won't be uploading different files per turn, all will be 
+            # combined and uploaded at the very beginning of the chat session.
+            "files": [
+                {
+                    "path": "relative_file_path_1",
+                    "url": "https://url_of_file"
+                },
+                # ...
+            ],
+            "prompts": [
+                "User Prompt 1",
+                "User Prompt 2",
+                
+                # ...
+            ]
+        }
+    ]
+}
+'''
+
 try:
     with open('jobs.json', 'r') as jfp:
         JOBS = json.loads(jfp.read())
@@ -85,7 +112,9 @@ driver = webdriver.Chrome(service=service, options=options)
 # Open a new session and run all prompts for each task/job
 for task in JOBS['tasks']:
     task_id        = task['task_id']
-    prompt_files   = task['files']
+    prompt_files      = [f['path'] for f in task['files']]
+    prompt_file_urls = [f.get('url', "") for f in task['files']]
+
     files_uploaded = False
 
     if len(task['prompts']) >= 1: # Continue if prompts are available
@@ -118,7 +147,7 @@ for task in JOBS['tasks']:
             if not files_uploaded:
                 for file in files_str:
                     upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
-                    WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
+                    WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
                     # Construct the XPath to find the upload file element with this id prefix and text match
@@ -215,7 +244,7 @@ for task in JOBS['tasks']:
                         @class = "mb-3 max-w-[80%]"
                     ]
                 ''')
-                print('[x] Found', len(plot_images), 'Images')
+                print('[x] Found', len(plot_images), 'Image' if len(plot_images) ==1 else 'Images')
 
                 if plot_images:
                     for img_idx, img in enumerate(plot_images):
@@ -248,6 +277,7 @@ for task in JOBS['tasks']:
                     'end_to_end_time': end_to_end_time,
                     'html_response': html_str,
                     'prompt_files': prompt_files,
+                    'prompt_file_urls': prompt_file_urls,
                     'timestamp': str(datetime.now())
                 }
             )
@@ -263,6 +293,7 @@ for task in JOBS['tasks']:
                 'time_to_ice': 0,
                 'end_to_end_time': end_to_end_time,
                 'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
+                'prompt_file_urls': ", ".join(prompt_file_urls),
                 'timestamp': datetime.now()
             })
             

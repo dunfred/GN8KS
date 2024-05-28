@@ -1,5 +1,5 @@
 ''' 
-CLI Based Reproducibility Ferequency out of 5 
+CLI Based Reproducibility Frequency out of 5 
 
 Runs each task 5 times and stores them as notebooks
 '''
@@ -130,7 +130,7 @@ for task in JOBS['tasks']:
     OUTPUT = defaultdict(list)
     
     task_id        = task['task_id']
-    prompt_files   = task['files'][0:1]
+    prompt_files   = task['files'][0:1] # Use first file only
 
     # Ensure the output directory exists
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -221,6 +221,7 @@ for task in JOBS['tasks']:
                 print('[x] Loading previous turn data')
                 with open(f"{resp_dir_path}/response-turn{p_idx}.json","r") as f: # Read previous turn data
                     prev_response = json.loads(f.read())
+                    print('[x] Done Loading previous turn data')
                     # Grab the previous turn data and append new query data to it
                     contents_of_prev_turn = prev_response["candidates"][0]["content"]
                     contents_of_prev_turn['parts'] = [d for d in contents_of_prev_turn['parts'] if 'fileData' not in d]
@@ -237,8 +238,10 @@ for task in JOBS['tasks']:
                     data["contents"].append(contents_of_prev_turn)
                     data["contents"].append(new_query)
 
+                    print('[x] Submiting New Query to Model')
+
                     response = requests.post(url, headers=headers, data=json.dumps(data))
-                    print('[x] MODEL RESPONSE RECEIVED',response)
+                    print('[x] Query Response Received',response)
 
             # Save the Response in a Json File
             with open(f"{resp_dir_path}/response-turn{p_idx+1}.json","w") as f:
@@ -273,6 +276,7 @@ for task in JOBS['tasks']:
                     'prompt': prompt,
                     'response': notebook_str,
                     'prompt_files': prompt_files,
+                    'prompt_file_urls': []
                 }
             )
 
@@ -288,7 +292,7 @@ for task in JOBS['tasks']:
                 ensure_directory_exists(os.path.join(output_dir, f"copy_{copy_index+1}"))
                 filepath = f"{output_dir}/copy_{copy_index+1}/Gemini_userquery{p_idx+1}_plot{im_idx+1}.png"
                 im.save(filepath)
-            print('[x] Saved all images for turn')
+            print(f'[x] Saved all images for turn {p_idx+1}')
 
         # Generate notebook
         print('Generating Notebook')

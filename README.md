@@ -1,4 +1,4 @@
-# Automation Script for Running and Documenting Prompts v2.2.1
+# Automation Script for Running and Documenting Prompts v2.3.1
 
 This project aims to automate the process of running and documenting the results of various prompts and storing them into notebooks. 
 
@@ -68,13 +68,16 @@ Create a `jobs.json` file in the script's directory with the structure below. Yo
             # So currently you won't be uploading different files per turn, all will be 
             # combined and uploaded at the very beginning of the chat session.
             "files": [
-                "relative_file_path_1",
-                "relative_file_path_2",
+                {
+                    "path": "relative_file_path_1",
+                    "url": "https://url_of_file"
+                },
                 # ...
             ],
             "prompts": [
                 "User Prompt 1",
                 "User Prompt 2",
+                
                 # ...
             ]
         },
@@ -84,8 +87,14 @@ Create a `jobs.json` file in the script's directory with the structure below. Yo
             # So currently you won't be uploading different files per turn, all will be 
             # combined and uploaded at the very beginning of the chat session.
             "files": [
-                "relative_file_path_1",
-                "relative_file_path_2",
+                {
+                    "path": "relative_file_path_1",
+                    "url": "https://url_of_file"
+                },
+                {
+                    "path": "relative_file_path_2",
+                    "url": "https://url_of_file"
+                }
                 # ...
             ],
             "prompts": [
