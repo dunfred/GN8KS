@@ -137,7 +137,7 @@ class IPYNBGenerator:
                         notebook_cells.append({
                             "cell_type": "code",
                             "metadata": {},
-                            "source": code_content.get_text().splitlines()
+                            "source": [cl + '\n' for cl in code_content.get_text().splitlines()]
                         })
                     else:
                          notebook_cells.append({
