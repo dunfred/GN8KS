@@ -231,16 +231,19 @@ for task in JOBS['tasks']:
             response_footer_element = WebDriverWait(driver, 210).until(LastFooterElement(observed_element_locator, "response-container-footer"))
             # print("RESPONSE FOOTER ELEM:", response_footer_element)
 
+            time.sleep(3)
             # Finding and clicking menu action bar to show copy button
+            more_options_menu_element_xpath = ".//message-actions/div/div/div[2]/button"
             try:
-                WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, ".//message-actions/div/div/div[2]/button")))
+                WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, )))
             except Exception:
                 # Scroll to the bottom of the page
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 # Now try again
-                WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, ".//message-actions/div/div/div[2]/button")))
+                more_options_menu_element_xpath = './/*[@aria-label="Show more options" and @mattooltip="More" and contains(@class, "mat-mdc-menu-trigger")]'
+                WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, more_options_menu_element_xpath)))
 
-            more_options_menu = response_footer_element.find_element(By.XPATH, ".//message-actions/div/div/div[2]/button")
+            more_options_menu = response_footer_element.find_element(By.XPATH, more_options_menu_element_xpath)
             more_options_menu.click()
 
             # Finding and clicking the actual copy button
