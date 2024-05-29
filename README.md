@@ -74,7 +74,9 @@ Create a `jobs.json` file in the script's directory with the structure below. Yo
             # combined and uploaded at the very beginning of the chat session.
             "files": [
                 {
-                    "path": "relative_file_path_1",
+                    # Relative path of file or dataset which you will be using for these prompts. 
+                    "path": "relative_file_path_1", #Ex: "query_files/activities.csv"
+                    # The google drive link to the file or dataset
                     "url": "https://url_of_file"
                 },
                 # ...
