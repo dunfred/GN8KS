@@ -228,12 +228,18 @@ for task in JOBS['tasks']:
             response_footer_locator = (By.XPATH, "following-sibling::div[contains(@class, 'response-container-footer')]")
 
             # Wait for the last footer element to be present
-            response_footer_element = WebDriverWait(driver, 180).until(LastFooterElement(observed_element_locator, "response-container-footer"))
+            response_footer_element = WebDriverWait(driver, 210).until(LastFooterElement(observed_element_locator, "response-container-footer"))
             # print("RESPONSE FOOTER ELEM:", response_footer_element)
 
             # Finding and clicking menu action bar to show copy button
-            time.sleep(3)
-            WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, ".//message-actions/div/div/div[2]/button")))
+            try:
+                WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, ".//message-actions/div/div/div[2]/button")))
+            except Exception:
+                # Scroll to the bottom of the page
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                # Now try again
+                WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, ".//message-actions/div/div/div[2]/button")))
+
             more_options_menu = response_footer_element.find_element(By.XPATH, ".//message-actions/div/div/div[2]/button")
             more_options_menu.click()
 
