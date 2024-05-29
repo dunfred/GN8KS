@@ -51,9 +51,12 @@ from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLast
 try:
     with open('jobs.json', 'r') as jfp:
         JOBS = json.loads(jfp.read())
-except Exception:
+except FileNotFoundError:
     JOBS = {}
     raise('Please make sure you "jobs.json" file is added to this directory before proceeding!')
+except json.decoder.JSONDecodeError:
+    JOBS = {}
+    raise('Your "jobs.json" file has syntax some issues, kindly fix them before proceeding.')
 
 pprint(JOBS)
 
