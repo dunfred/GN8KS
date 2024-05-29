@@ -15,7 +15,10 @@ from dotenv import load_dotenv
 from nbformat import write
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
 from collections import defaultdict
+from altair_post_processing import post_process_chart
 from utils import ensure_directory_exists, update_prompt_output
+import altair as alt
+import vl_convert as vlc
 
 load_dotenv()
 
@@ -255,6 +258,7 @@ for task in JOBS['tasks']:
                         'EVENT_TAG_CODE_MSG_OUT',
                         'EVENT_TAG_CODE_ERROR_OUT',
                         'EVENT_TAG_OUTPUT_TO_USER',
+                        'EVENT_TAG_CODE_GENERATED_IMAGE_OUT'
                     ]:
                         if i['eventTag'] == 'EVENT_TAG_CODE':
                             notebook_str += f"```python?code_reference&code_event_index=2\n{i['eventMsg']}\n```\n"
@@ -283,15 +287,34 @@ for task in JOBS['tasks']:
             # Save Images For this Turn (if any)
             parts = response.json()["candidates"][0]["content"]["parts"]
 
-            # recover png images, of course different file types can be identified
+            # Recover png images, of course different file types can be identified - Matplotlib
             images = [x for x in parts if "fileData" in x.keys() and ("png" in x["partMetadata"]["tag"])]
             links = [x["fileData"]["fileUri"] for x in images]
 
             for im_idx, l in enumerate(links):
                 im = Image.open(requests.get(l, stream=True).raw)
+                # Save image
                 ensure_directory_exists(os.path.join(output_dir, f"copy_{copy_index+1}"))
                 filepath = f"{output_dir}/copy_{copy_index+1}/Gemini_userquery{p_idx+1}_plot{im_idx+1}.png"
                 im.save(filepath)
+
+
+            # Save images for this turn (if any) - Altair
+            alt_images = [x for x in parts if "fileData" in x.keys() and ("json" in x["partMetadata"]["tag"])]
+            alt_links = [x["fileData"]["fileUri"] for x in alt_images]
+            for im_idx, l in enumerate(alt_links):
+                altair_json = requests.get(l).json()
+                altair_chart_object = alt.Chart.from_dict(altair_json)
+                post_process_chart(altair_chart_object)
+
+                # Save the Altair chart as an image (PNG format)
+                ensure_directory_exists(os.path.join(output_dir, f"copy_{copy_index+1}"))
+                filepath = f"{output_dir}/copy_{copy_index+1}/Gemini_userquery{p_idx+1}_altair_plot{im_idx+1}.png"
+                png_data = vlc.vegalite_to_png(altair_chart_object.to_json(), scale=2)
+                with open(filepath, "wb") as f:
+                    f.write(png_data)
+
+
             print(f'[x] Saved all images for turn {p_idx+1}')
 
         # Generate notebook
