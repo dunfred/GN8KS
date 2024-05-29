@@ -155,14 +155,14 @@ class IPYNBGenerator:
                         "source": ["### " + tag.get_text() + "\n"]
                     })
                 elif tag.name == 'ol':
-                    list_items = "\n".join([f"1. {li.get_text()}" for li in tag.find_all('li')])
+                    list_items = self.process_nested_list(tag, ordered=True)
                     notebook_cells.append({
                         "cell_type": "markdown",
                         "metadata": {},
                         "source": [list_items + "\n"]
                     })
                 elif tag.name == 'ul':
-                    list_items = "\n".join([f"- {li.get_text()}" for li in tag.find_all('li')])
+                    list_items = self.process_nested_list(tag, ordered=False)
                     notebook_cells.append({
                         "cell_type": "markdown",
                         "metadata": {},
@@ -183,3 +183,32 @@ class IPYNBGenerator:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(notebook_str)
         print(f"[x] Notebook has been saved to {filepath}")
+
+    def process_nested_list(self, tag, level=0, ordered=False):
+        items = []
+        indent = '  ' * level
+        for li in tag.find_all('li', recursive=False):
+            nested_ul = li.find('ul')
+            nested_ol = li.find('ol')
+
+            # Temporarily remove nested lists
+            if nested_ul:
+                nested_ul.extract()
+            if nested_ol:
+                nested_ol.extract()
+
+            # Get the text for the current list item
+            prefix = '1. ' if ordered else '- '
+            items.append(indent + prefix + li.get_text().strip())
+
+            # Reinsert and process nested lists
+            if nested_ul:
+                items.append(self.process_nested_list(nested_ul, level + 1, ordered=False))
+                li.append(nested_ul)
+            if nested_ol:
+                items.append(self.process_nested_list(nested_ol, level + 1, ordered=True))
+                li.append(nested_ol)
+
+        return '\n'.join(items)
+
+
