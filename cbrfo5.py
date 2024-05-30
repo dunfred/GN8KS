@@ -41,9 +41,13 @@ def read_file_as_base64(file_path):
 try:
     with open('reproducible-jobs.json', 'r') as jfp:
         JOBS = json.loads(jfp.read())
-except Exception:
+except FileNotFoundError:
     JOBS = {}
     raise('Please make sure you "reproducible-jobs.json" file is added to this directory before proceeding!')
+except json.decoder.JSONDecodeError:
+    JOBS = {}
+    raise('Your "reproducible-jobs.json" file has syntax some issues, kindly fix them to proceed.')
+
 pprint(JOBS)
 
 RATER_ID = JOBS['rater_id']
