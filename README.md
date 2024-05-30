@@ -231,3 +231,30 @@ Once you have populated the `reproducible-jobs.json` with your details:
 ## Miscellaneous
 1. Gemini Chrome Port: 9222
 2. ChatGPT Chrome Port: 9333
+
+
+# FAQs & Tips
+1. The `pyperclip` library may not work out-of-the-box on some `Linux systems` due to missing dependencies. `pyperclip` relies on the presence of certain clipboard utilities such as `xclip` or `xsel`. If these utilities are not installed, you will encounter the "no copy mechanism" error.
+
+    Here’s how you can resolve this issue by installing the required dependencies:
+
+    1. **Install `xclip` or `xsel`**:
+        - You can install `xclip` by running the following command in your terminal:
+            ```sh
+            sudo apt-get install xclip
+            ```
+        - Alternatively, you can install `xsel`:
+            ```sh
+            sudo apt-get install xsel
+            ```
+
+    2. **Use `pyperclip` After Installing the Dependencies**:
+        - Once you have installed either `xclip` or `xsel`, you can use `pyperclip` as intended.
+
+    ### Troubleshooting:
+    - If you still encounter issues after installing `xclip` or `xsel`, ensure that the installed utilities are accessible in your system's PATH.
+    - You can also try using the `pyperclip` library with different backends. By default, `pyperclip` automatically detects and uses the available clipboard mechanism.
+
+    This should resolve the "no copy mechanism" error on Linux and allow you to use `pyperclip` for clipboard operations.
+
+2. Always make sure you pull latest updates which contains fixes or new features thathave been added to make the script more efficient.
