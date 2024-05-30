@@ -64,7 +64,7 @@ This project aims to automate the process of running and documenting the results
         - `chromedriver-win32.exe`
         - `chromedriver-win64.exe`
 
-6. Ensure you have the libraries in `requirements.txt` installed into your python environment. For windows users, you may uncomment the `pywin32==306` library in the `requirements.txt` file before doing this.
+6. Ensure you have the libraries in `requirements.txt` installed into your python environment. For windows users, you may uncomment the`pywin32==306` and `pywinpty==2.0.13` library in the `requirements.txt` file before doing this.
     ```bash
     pip install -r requirements.txt
     ```
