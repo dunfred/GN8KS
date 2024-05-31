@@ -15,7 +15,7 @@ This project aims to automate the process of running and documenting the results
 
 2. Start two Chrome sessions in debug mode using one of the commands below depending on your Operating System:
 
-- ### Start Chrome Session For Gemini
+- ### Start Chrome Session For Gemini (Remember to replace the <your-username> with yours)
 
     **Windows:**
     ```sh
@@ -31,7 +31,7 @@ This project aims to automate the process of running and documenting the results
     ```sh
     google-chrome --remote-debugging-port=9222 --user-data-dir="/home/<your-username>/selenium_chrome_profile"
     ```
-- ### Start Chrome Session For ChatGPT
+- ### Start Chrome Session For ChatGPT  (Remember to replace the <your-username> with yours)
 
     **Windows:**
     ```sh
@@ -73,7 +73,7 @@ This project aims to automate the process of running and documenting the results
 
 8. From my personal experience, if your computer's screen is not big enough to have the 2 Chrome browser windows opened at maximum width side by side, you're better off executing the scripts one at a time so one brower can have enough space. This is so the 2 browsers don't overlap each other and mistakenly start clicking items in the other browser. You can first run `chatgpt.py` and wait for it finish executing before you do same for `gemini.py` or vice-versa. :)
 
-
+9. Another Note for `Mac` users, once you start any of the scripts. Kindly go back and select the chrome browser to put it into focus.
 
 **NOTE:** _Completely minimize mouse interactions to ensure a smooth process while the script is/are running as the script will mostly use the keyboard to type the file path when uploading files. If you're using the mouse elsewhere, the keyboard, will attempt to type the path of the file at wherever you focused the mouse instead of the web file input form popup. As it stands, both Gemini and GPT platforms don't make it possible to upload files using automated scripts, that's why I had to resort to the use of keyboard, in case you were wondering why. :)_
 
@@ -257,4 +257,4 @@ Once you have populated the `reproducible-jobs.json` with your details:
 
     This should resolve the "no copy mechanism" error on Linux and allow you to use `pyperclip` for clipboard operations.
 
-2. Always make sure you pull latest updates which contains fixes or new features thathave been added to make the script more efficient.
+2. Always make sure you pull latest updates which contains fixes or new features that have been added.

@@ -4,6 +4,7 @@ import os
 import time
 import json
 import random
+import pyautogui
 import pyperclip
 import platform
 import pandas as pd
@@ -159,9 +160,9 @@ for task in JOBS['tasks']:
                         upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
                     else:
                         upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/uploader/div[1]/div/button'
-                    
+
                     WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
-                    
+
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
                     upload_local_file_xpath = '//*[@id="file-uploader-local"]'
@@ -169,10 +170,23 @@ for task in JOBS['tasks']:
                     local_file_input = driver.find_element(By.XPATH, upload_local_file_xpath)
                     local_file_input.click() 
                     time.sleep(3)
-                    keyboard = Controller()
-                    keyboard.type(file)
-                    keyboard.press(PyKey.enter)
-                    keyboard.release(PyKey.enter)
+
+                    # Do this for Mac
+                    if platform.system() == 'Darwin':
+                        pyautogui.hotkey('command', 'shift', 'g')  # Shortcut to open 'Go to Folder' dialog on Mac
+                        time.sleep(1)  # Ensure the dialog is focused
+                        # Simulate typing the file path using pyautogui
+                        pyautogui.write(file, interval=0.05)
+                        pyautogui.press('enter')
+                        time.sleep(1)
+                        pyautogui.press('enter')
+                    # Do this for other OS
+                    else:
+                        keyboard = Controller()
+                        keyboard.type(file)
+                        keyboard.press(PyKey.enter)
+                        keyboard.release(PyKey.enter)
+
                     is_first_file = False
                     print(f'[x] Prompt {idx+1}: File Uploaded Successfully! - {file}')
                 # Make sure script doesn't attempt to upload files again.

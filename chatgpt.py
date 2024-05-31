@@ -3,6 +3,7 @@ import time
 import json
 import random
 import platform
+import pyautogui
 import requests
 import pandas as pd
 from pathlib import Path
@@ -162,15 +163,26 @@ for task in JOBS['tasks']:
                         upload_local_file_xpath = '//*[starts-with(@id, "radix-:r")]/div[3][text()="Upload from computer"]'
                         WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
 
-                    # //*[@id="radix-:rb:"]/div[4]
                     local_file_input = driver.find_element(By.XPATH, upload_local_file_xpath)
-                    local_file_input.click() 
-
+                    local_file_input.click()
                     time.sleep(3)
-                    keyboard = Controller()
-                    keyboard.type(file)
-                    keyboard.press(PyKey.enter)
-                    keyboard.release(PyKey.enter)
+
+                    # Do this for Mac
+                    if platform.system() == 'Darwin':
+                        pyautogui.hotkey('command', 'shift', 'g')  # Shortcut to open 'Go to Folder' dialog on Mac
+                        time.sleep(1)  # Ensure the dialog is focused
+                        # Simulate typing the file path using pyautogui
+                        pyautogui.write(file, interval=0.05)
+                        pyautogui.press('enter')
+                        time.sleep(1)
+                        pyautogui.press('enter')
+                    # Do this for other OS
+                    else:
+                        keyboard = Controller()
+                        keyboard.type(file)
+                        keyboard.press(PyKey.enter)
+                        keyboard.release(PyKey.enter)
+                        
                     print(f'[x] Prompt {idx+1}: File Uploaded Successfully! - {file}')
 
                 # Make sure script doesn't attempt to upload files again.

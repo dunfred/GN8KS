@@ -88,6 +88,7 @@ protobuf==4.25.3
 psutil==5.9.8
 pure-eval==0.2.2
 pyarrow==16.1.0
+pyautogui==0.9.54
 pycparser==2.22
 pydeck==0.9.1
 pyee==11.1.0
