@@ -228,6 +228,10 @@ Once you have populated the `reproducible-jobs.json` with your details:
 
 [Fred Dunyo](https://github.com/dunfred)
 
+## Credits
+[Gabriel Zinato]()
+[Moshin Akbar]()
+
 ## Miscellaneous
 1. Gemini Chrome Port: 9222
 2. ChatGPT Chrome Port: 9333
