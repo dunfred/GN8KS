@@ -15,7 +15,7 @@ This project aims to automate the process of running and documenting the results
 
 2. Start two Chrome sessions in debug mode using one of the commands below depending on your Operating System:
 
-- ### Start Chrome Session For Gemini (Remember to replace the <your-username> with yours)
+- ### Start Chrome Session For Gemini (Remember to replace the `<your-username>` with that of your system's)
 
     **Windows:**
     ```sh
@@ -31,7 +31,7 @@ This project aims to automate the process of running and documenting the results
     ```sh
     google-chrome --remote-debugging-port=9222 --user-data-dir="/home/<your-username>/selenium_chrome_profile"
     ```
-- ### Start Chrome Session For ChatGPT  (Remember to replace the <your-username> with yours)
+- ### Start Chrome Session For ChatGPT  (Remember to replace the `<your-username>` with that of your system's)
 
     **Windows:**
     ```sh
