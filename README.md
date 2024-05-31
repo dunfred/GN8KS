@@ -148,7 +148,8 @@ Once Chrome is running in debug mode and you are logged into Gemini:
 
 1. Place your `jobs.json` file in the script directory.
 2. Run the script to start the automation process.
-
+4. All various notebooks generated will be located in a directory called `notebooks/`.
+5. You can find more details like the raw `response` generated for each turn/prompt in the `time-tracksheet/` directory.
 
 #
 # CLI Based Reproducibility Frequency out of 5
@@ -229,8 +230,9 @@ Once you have populated the `reproducible-jobs.json` with your details:
 [Fred Dunyo](https://github.com/dunfred)
 
 ## Credits
-[Gabriel Zinato]()
-[Moshin Akbar]()
+
+- [Gabriel Zinato](https://github.com/GabrielZinatoSP)
+- [Moshin Akbar](#)
 
 ## Miscellaneous
 1. Gemini Chrome Port: 9222
