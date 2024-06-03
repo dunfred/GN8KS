@@ -69,7 +69,7 @@ This project aims to automate the process of running and documenting the results
     pip install -r requirements.txt
     ```
 
-7. Open 2 termninal sessions, navigate to the root project directory where the scripts `gemini.py` and `chatgpt.py` are located and run them separately in the 2 terminals. 
+7. Open 2 termninal sessions, navigate to the root project directory where the scripts `gemini.py` and `chatgpt.py` are located and run them separately in the 2 terminals. Another important note is to make sure your ChatGPT has the `Always show details` enabled for the code blocks so that the codes can be visble for the script to scrape them.
 
 8. From my personal experience, if your computer's screen is not big enough to have the 2 Chrome browser windows opened at maximum width side by side, you're better off executing the scripts one at a time so one brower can have enough space. This is so the 2 browsers don't overlap each other and mistakenly start clicking items in the other browser. You can first run `chatgpt.py` and wait for it finish executing before you do same for `gemini.py` or vice-versa. :)
 
