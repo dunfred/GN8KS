@@ -196,16 +196,16 @@ for task in JOBS['tasks']:
             # Submit the query.
             submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
 
-            time.sleep(3)
+            time.sleep(20)
             try:
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
             except Exception:
                 submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/div/button'
                 try:
-                    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                    WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
                 except Exception:
                     submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
-                    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                    WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
             submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
             submit_prompt_btn.click()
@@ -215,7 +215,7 @@ for task in JOBS['tasks']:
             start_time_to_trigger_ice = time.time()
 
             # Wait for the element to be present
-            WebDriverWait(driver, 60).until(EC.presence_of_element_located(observed_element_locator))
+            WebDriverWait(driver, 90).until(EC.presence_of_element_located(observed_element_locator))
 
             # Wait for the text "Analyzing..." to appear in the element or its nested elements
             WebDriverWait(driver, 210).until(TextInLastElement(observed_element_locator))

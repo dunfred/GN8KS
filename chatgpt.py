@@ -187,7 +187,7 @@ for task in JOBS['tasks']:
 
                 # Make sure script doesn't attempt to upload files again.
                 files_uploaded = True
-                time.sleep(3)
+                time.sleep(20)
 
             # Submit the query.
             submit_prompt_btn_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/button'
@@ -328,7 +328,7 @@ for task in JOBS['tasks']:
         ipynb_gen.html_to_notebook(
             OUTPUT[task_id]
         )
-        print(f'[x] Completed Task ID: {task_id}.')
+        print(f'[x] Completed Task ID: {task_id}.\n\n')
 
 
 
