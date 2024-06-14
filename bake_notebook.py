@@ -126,6 +126,7 @@ class IPYNBGenerator:
 
             soup = BeautifulSoup(html_content, 'html.parser')
 
+            seen_li_elems = set()
 
             for tag in soup.find_all(['p', 'pre', 'h3', 'ol', 'ul']):
                 if tag.name == 'p':
@@ -155,19 +156,35 @@ class IPYNBGenerator:
                         "source": ["### " + tag.get_text() + "\n"]
                     })
                 elif tag.name == 'ol':
-                    list_items = self.process_nested_list(tag, ordered=True)
-                    notebook_cells.append({
-                        "cell_type": "markdown",
-                        "metadata": {},
-                        "source": [list_items + "\n"]
-                    })
+                    duplicate = False
+                    for seen_li in seen_li_elems:
+                        if str(tag).strip() in seen_li:
+                            duplicate = True
+                    
+                    if not duplicate:
+                        list_items = self.process_nested_list(tag, ordered=True)
+                        notebook_cells.append({
+                            "cell_type": "markdown",
+                            "metadata": {},
+                            "source": [list_items + "\n"]
+                        })
+                        seen_li_elems.add(str(tag).strip())
+
                 elif tag.name == 'ul':
-                    list_items = self.process_nested_list(tag, ordered=False)
-                    notebook_cells.append({
-                        "cell_type": "markdown",
-                        "metadata": {},
-                        "source": [list_items + "\n"]
-                    })
+                    duplicate = False
+                    for seen_li in seen_li_elems:
+                        if str(tag).strip() in seen_li:
+                            duplicate = True
+
+                    if not duplicate:
+                        list_items = self.process_nested_list(tag, ordered=False)
+                        notebook_cells.append({
+                            "cell_type": "markdown",
+                            "metadata": {},
+                            "source": [list_items + "\n"]
+                        })
+                        seen_li_elems.add(str(tag).strip())
+
 
         # Notebook JSON structure
         notebook = {
@@ -187,6 +204,7 @@ class IPYNBGenerator:
     def process_nested_list(self, tag, level=0, ordered=False):
         items = []
         indent = '  ' * level
+        prefix_no = 0
         for li in tag.find_all('li', recursive=False):
             nested_ul = li.find('ul')
             nested_ol = li.find('ol')
@@ -198,7 +216,14 @@ class IPYNBGenerator:
                 nested_ol.extract()
 
             # Get the text for the current list item
-            prefix = '1. ' if ordered else '- '
+            prefix = f'{prefix_no+1}. ' if ordered else '- '
+
+            # Find all <code> tags and replace them with backticks
+            for code_tag in li.find_all('code'):
+                code_tag.insert_before('`')
+                code_tag.insert_after('`')
+                code_tag.unwrap()
+
             items.append(indent + prefix + li.get_text().strip())
 
             # Reinsert and process nested lists
@@ -208,7 +233,7 @@ class IPYNBGenerator:
             if nested_ol:
                 items.append(self.process_nested_list(nested_ol, level + 1, ordered=True))
                 li.append(nested_ol)
-
+            prefix_no += 1
         return '\n'.join(items)
 
 
