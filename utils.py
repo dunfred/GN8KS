@@ -137,3 +137,18 @@ def update_error_code_counts(error_counts_dict, string):
     for errorType in error_types:
         error_counts_dict[errorType] += string.count(f"{errorType}:")
 
+def replace_json_tags(notebook_str, base64_images):
+    ''' Inserts images (in base 64 format) underneath altair json tags in the notebook string'''
+    pattern = r"\[json-tag: code-generated-json-[^]]+\]"
+    counter = 0
+
+    def replacement_func(match):
+        nonlocal counter
+        replacement_text = f"{match.group(0)}"
+        if counter < len(base64_images):
+            replacement_text = f"![Plot {counter}](data:image/png;base64,{base64_images[counter]})\n{match.group(0)}"
+        counter += 1
+        return replacement_text
+
+    return re.sub(pattern, replacement_func, notebook_str)
+

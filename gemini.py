@@ -21,7 +21,7 @@ from pynput.keyboard import Key as PyKey, Controller
 from pprint import pprint
 
 from bake_notebook import IPYNBGenerator
-from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_error_code_counts, update_prompt_output
+from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output
 
 ''' SAMPLE `jobs.json` file template
 {
@@ -324,7 +324,17 @@ for task in JOBS['tasks']:
                 ERROR_COUNTS_DICT,
                 tracebacks_str
             )
-            
+
+            # Perform the insertion of plot images into notebook string
+            notebook_response = replace_json_tags(
+                notebook_str=notebook_response,
+                base64_images=[
+                    img.get_attribute('src').split('base64,')[1] if 'base64,' in img.get_attribute('src')\
+                    else img.get_attribute('src')\
+                    for img in plot_images
+                ]
+            )
+
             # Update the local backup data with latest prompt data if already exists, else add as new
             update_prompt_output(
                 main_dict       = OUTPUT,
