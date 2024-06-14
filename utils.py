@@ -139,7 +139,7 @@ def update_error_code_counts(error_counts_dict, string):
 
 def replace_json_tags(notebook_str, base64_images):
     ''' Inserts images (in base 64 format) underneath altair json tags in the notebook string'''
-    pattern = r"\[json-tag: code-generated-json-[^]]+\]"
+    pattern = r"\[json-tag: [^]]+\]"
     counter = 0
 
     def replacement_func(match):

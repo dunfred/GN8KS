@@ -16,7 +16,7 @@ from nbformat import write
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
 from collections import defaultdict
 from altair_post_processing import post_process_chart
-from utils import ensure_directory_exists, update_prompt_output
+from utils import ensure_directory_exists, replace_json_tags, update_prompt_output
 import altair as alt
 import vl_convert as vlc
 
@@ -137,7 +137,7 @@ for task in JOBS['tasks']:
     OUTPUT = defaultdict(list)
     
     task_id        = task['task_id']
-    prompt_files   = task['files'][0:1] # Use first file only
+    prompt_files   = [f['path'] for f in task['files']]
 
     # Ensure the output directory exists
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -183,39 +183,37 @@ for task in JOBS['tasks']:
                 print('[x] Is first turn')
 
                 if not files_uploaded or prompt_files:
-                    print('[x] Submiting first prompt with file')
-
-                    # Can only upload one file 
-                    p_filepath = prompt_files[0]
-                    p_filepath     = p_filepath.strip()
-                    file_name      = p_filepath.split('/')[-1]
-                    file_extention = file_name.split('.')[-1]
-                    
-                    if file_extention == 'xlsx':
-                        mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
-                    elif file_extention == 'xls':
-                        mime_type = "application/vnd.ms-excel"
-
-                    else:
-                        mime_type = "text/csv"
-
-                    file_encoded = read_file_as_base64(p_filepath)
-
-
+                    print('[x] Submiting first prompt with all files')
                     data['contents'].append(
                         {
                             "role": "user",
-                            "parts": [
-                                {"text": prompt},
-                                {
-                                    "inlineData": {"mimeType": mime_type, "data":file_encoded}, 
-                                    "partMetadata": {"externalFileMetadata": {"name": file_name}}
-                                }
-                            ]
+                            "parts": [{"text": prompt}]
                         }
                     )
-                    files_uploaded = True
+                    for p_filepath in prompt_files:
+                        p_filepath     = p_filepath.strip()
+                        file_name      = p_filepath.split('/')[-1]
+                        file_extention = file_name.split('.')[-1]
+                        
+                        if file_extention == 'xlsx':
+                            mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+                        elif file_extention == 'xls':
+                            mime_type = "application/vnd.ms-excel"
+
+                        else:
+                            mime_type = "text/csv"
+
+                        file_encoded = read_file_as_base64(p_filepath)
+                        data['contents'][0]['parts'].append(
+                            {
+                                "inlineData": {"mimeType": mime_type, "data":file_encoded}, 
+                                "partMetadata": {"externalFileMetadata": {"name": file_name}}
+                            }
+                        )
+
+                        files_uploaded = True
+
                 else:
                     data['contents'].append({
                         "role": "user",
@@ -276,18 +274,7 @@ for task in JOBS['tasks']:
                 event_msg = response.json()["candidates"][0]["content"]["parts"][0]['text']
                 notebook_str += event_msg
 
-            # Update the local backup data with latest prompt data if already exists, else add as new
-            update_prompt_output(
-                main_dict       = OUTPUT,
-                id_key          = task_id,
-                new_prompt_dict =   {
-                    'prompt': prompt,
-                    'response': notebook_str,
-                    'prompt_files': prompt_files,
-                    'prompt_file_urls': []
-                }
-            )
-
+            
             # Save Images For this Turn (if any)
             parts = response.json()["candidates"][0]["content"]["parts"]
 
@@ -306,6 +293,7 @@ for task in JOBS['tasks']:
             # Save images for this turn (if any) - Altair
             alt_images = [x for x in parts if "fileData" in x.keys() and ("json" in x["partMetadata"]["tag"])]
             alt_links = [x["fileData"]["fileUri"] for x in alt_images]
+            alt_base64_images = []
             for im_idx, l in enumerate(alt_links):
                 altair_json = requests.get(l).json()
                 altair_chart_object = alt.Chart.from_dict(altair_json)
@@ -317,9 +305,29 @@ for task in JOBS['tasks']:
                 png_data = vlc.vegalite_to_png(altair_chart_object.to_json(), scale=2)
                 with open(filepath, "wb") as f:
                     f.write(png_data)
+                    alt_base64_images.append(base64.b64encode(png_data).decode('utf-8'))
+
+            # Perform the insertion of plot images into notebook string
+            notebook_str = replace_json_tags(
+                notebook_str=notebook_str,
+                base64_images=alt_base64_images
+            )
+
+            # Update the local backup data with latest prompt data if already exists, else add as new
+            update_prompt_output(
+                main_dict       = OUTPUT,
+                id_key          = task_id,
+                new_prompt_dict =   {
+                    'prompt': prompt,
+                    'response': notebook_str,
+                    'prompt_files': prompt_files,
+                    'prompt_file_urls': []
+                }
+            )
 
 
             print(f'[x] Saved all images for turn {p_idx+1}')
+
 
         # Generate notebook
         print('Generating Notebook')
