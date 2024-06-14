@@ -1,8 +1,11 @@
+import base64
 import os
 import time
 import json
 import random
 import platform
+import bs4
+from bs4 import BeautifulSoup
 import pyautogui
 import requests
 import pandas as pd
@@ -236,6 +239,7 @@ for task in JOBS['tasks']:
             # Find all img elements within the response element that have the ngcontent attribute
             plot_images = gpt_reponse_elem.find_elements(By.TAG_NAME, 'img')
             plot_images = [i for i in plot_images if str(i.get_attribute('alt')).lower().strip() == "output image"]
+            base64_plot_images = []
 
             if plot_images:
                 # Iterate through each plot image and save it
@@ -251,6 +255,7 @@ for task in JOBS['tasks']:
                     # Save the image to the specified path
                     with open(file_path, 'wb') as file:
                         file.write(response.content)
+                        base64_plot_images.append(base64.b64encode(response.content).decode('utf-8'))
 
                 time.sleep(3)
             else:
@@ -264,25 +269,45 @@ for task in JOBS['tasks']:
                 if plot_images:
                     for img_idx, img in enumerate(plot_images):
                         file_path = os.path.join(output_dir, f'GPT_userquery{idx+1}_plot{img_idx+1}.png')
+                        # Scroll the element into view using JavaScript
+                        driver.execute_script("arguments[0].scrollIntoView(true);", img)
+
+                        # Wait for the element to be fully visible
+                        WebDriverWait(driver, 10).until(EC.visibility_of(img))
                         img.screenshot(file_path)
+
+                        with open(file_path, 'rb') as imgfile:
+                            base64_plot_images.append(base64.b64encode(imgfile.read()).decode('utf-8'))
                     time.sleep(3)
+
+            # Create a combined list of elements and images, including the order they appear
+            all_elements = []
+            element_positions = [(element, element.location['y']) for element in response_blocks]
+            image_positions = [(image, image.location['y']) for image in plot_images]
+
+            # Combine and sort by vertical position (y-coordinate)
+            combined_positions = sorted(element_positions + image_positions, key=lambda x: x[1])
+
+            for item, _ in combined_positions:
+                if item.tag_name == 'img':
+                    soup = BeautifulSoup('', 'html.parser')
+                    # Create an img tag
+                    img_tag = soup.new_tag('img', src=base64_plot_images[plot_images.index(item)])
+
+                    all_elements.append(img_tag)
+                else:
+                    # Get the outer HTML of the element to preserve its structure
+                    all_elements.append(item)
 
             # Create and cleanup notebook string
             html_str = """"""
-            for blk in response_blocks:
-                html_str += '\n' + blk.get_attribute('innerHTML')
-                # try:
-                #     code_element = blk.find_element(By.TAG_NAME, 'code')
-                #     # Access the content of the <code> element
-                #     code_content = code_element.text.strip()
-                #     code_content = code_content.replace("\n", "\r\n")
-                #     notebook_str += f"```python?code_reference&code_event_index=2\r\n{code_content}\r\n```"
+            for blk in all_elements:
+                if isinstance(blk, bs4.element.Tag):
+                    html_str += '\n' + str(blk)
+                else:
+                    html_str += '\n' + blk.get_attribute('innerHTML')
 
-                # except:
-                #     # print('No nested <code> element found.')
-                #     blk_text = blk.text.strip()
-                #     blk_text = blk_text.replace("\n", "\r\n")
-                #     notebook_str += f"{blk_text}\r\n"
+
 
             update_prompt_output(
                 main_dict       = OUTPUT,

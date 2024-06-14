@@ -1,4 +1,4 @@
-# Automation Script for Running and Documenting Prompts v2.3.1
+# Automation Script for Running and Documenting Prompts v2.4.1
 
 This project aims to automate the process of running and documenting the results of various prompts and storing them into notebooks. 
 
@@ -75,6 +75,11 @@ This project aims to automate the process of running and documenting the results
 
 9. Another Note for `Mac` users, once you start any of the scripts. Kindly go back and select the chrome browser to put it into focus.
 
+10. Always keep the browser zoom level at the default, **(100%)**, because any other level would affect the accuracy of plot images that the script snaps and saves, especially when running script for ChatGPT.
+
+11. You can find more details like the raw `response` generated and the count of `errors` observed in each turn/prompt inside the `time-tracksheet/` directory. For each turn/prompt, the count of errors will be the number of errors observed in the current prompt plus the total count from all previous prompts/turns combined, So if you have 3 queries and you see error counts on the row for prompt 3 when that prompt never encountered an error, it just means those counts represents the ones captured from the previous turns plus the ones captured in the current turn (which is zero in this case). Or to summarize everything, the error counts for the last prompt of each conversation is what you want to use in the Tracker Google sheet.
+
+
 **NOTE:** _Completely minimize mouse interactions to ensure a smooth process while the script is/are running as the script will mostly use the keyboard to type the file path when uploading files. If you're using the mouse elsewhere, the keyboard, will attempt to type the path of the file at wherever you focused the mouse instead of the web file input form popup. As it stands, both Gemini and GPT platforms don't make it possible to upload files using automated scripts, that's why I had to resort to the use of keyboard, in case you were wondering why. :)_
 
 ## Configuration
@@ -149,7 +154,6 @@ Once Chrome is running in debug mode and you are logged into Gemini:
 1. Place your `jobs.json` file in the script directory.
 2. Run the script to start the automation process.
 4. All various notebooks generated will be located in a directory called `notebooks/`.
-5. You can find more details like the raw `response` generated for each turn/prompt in the `time-tracksheet/` directory.
 
 #
 # CLI Based Reproducibility Frequency out of 5
@@ -158,7 +162,7 @@ This also another automated script for running tasks/prompts through cli 5 times
 
 ## Configuration
 
-Create a `reproducible-jobs.json` file in the script's directory with the structure below. You will be populating this file with your various prompts your're trying to run 5 times. The `cbrfo5.py` script file will be reading your inputs that json file:
+Create a `reproducible-jobs.json` file in the script's directory with the same structure as `jobs.json` above. You will be populating this file with your various prompts your're trying to run/test 5 times. The `cbrfo5.py` script file will be reading your inputs that json file:
 
 **reproducible-jobs.json**
 ```python
@@ -171,7 +175,12 @@ Create a `reproducible-jobs.json` file in the script's directory with the struct
             # So currently you won't be uploading different files per turn, all will be 
             # combined and uploaded at the very beginning of the chat session.
             "files": [
-                "relative_file_path_1",
+                {
+                    # Relative path of file or dataset which you will be using for these prompts. 
+                    "path": "relative_file_path_1", #Ex: "query_files/activities.csv"
+                    # The google drive link to the file or dataset
+                    "url": "https://url_of_file"
+                },
                 # ...
             ],
             "prompts": [
@@ -187,8 +196,14 @@ Create a `reproducible-jobs.json` file in the script's directory with the struct
             # So currently you won't be uploading different files per turn, all will be 
             # combined and uploaded at the very beginning of the chat session.
             "files": [
-                "relative_file_path_1",
-                "relative_file_path_2"
+                {
+                    "path": "relative_file_path_1",
+                    "url": "https://url_of_file"
+                },
+                {
+                    "path": "relative_file_path_2",
+                    "url": "https://url_of_file"
+                }
                 # ...
             ],
             "prompts": [

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from bs4 import BeautifulSoup
 from nbformat import write
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
@@ -126,9 +127,21 @@ class IPYNBGenerator:
 
             soup = BeautifulSoup(html_content, 'html.parser')
 
-
-            for tag in soup.find_all(['p', 'pre', 'h3', 'ol', 'ul']):
+            seen_li_elems = set()
+            img_counter = 1
+            for tag in soup.find_all(['p', 'pre', 'h3', 'ol', 'ul','img']):
                 if tag.name == 'p':
+                    # Find all <code> tags and replace them with backticks
+                    for code_tag in tag.find_all('code'):
+                        code_tag.insert_before('`')
+                        code_tag.insert_after('`')
+                        code_tag.unwrap()
+                    # Find all <strong> tags and replace them with astericks
+                    for code_tag in tag.find_all('strong'):
+                        code_tag.insert_before('**')
+                        code_tag.insert_after('**')
+                        code_tag.unwrap()
+                        
                     notebook_cells.append({
                         "cell_type": "markdown",
                         "metadata": {},
@@ -155,19 +168,50 @@ class IPYNBGenerator:
                         "source": ["### " + tag.get_text() + "\n"]
                     })
                 elif tag.name == 'ol':
-                    list_items = self.process_nested_list(tag, ordered=True)
-                    notebook_cells.append({
-                        "cell_type": "markdown",
-                        "metadata": {},
-                        "source": [list_items + "\n"]
-                    })
+                    duplicate = False
+                    for seen_li in seen_li_elems:
+                        if str(tag) in seen_li:
+                            duplicate = True
+
+                    if not duplicate:
+                        list_items = self.process_nested_list(tag, ordered=True)
+                        notebook_cells.append({
+                            "cell_type": "markdown",
+                            "metadata": {},
+                            "source": [list_items + "\n"]
+                        })
+                        seen_li_elems.add(str(tag))
+
                 elif tag.name == 'ul':
-                    list_items = self.process_nested_list(tag, ordered=False)
-                    notebook_cells.append({
-                        "cell_type": "markdown",
-                        "metadata": {},
-                        "source": [list_items + "\n"]
-                    })
+                    duplicate = False
+                    for seen_li in seen_li_elems:
+                        if str(tag) in seen_li:
+                            duplicate = True
+
+                    if not duplicate:
+                        list_items = self.process_nested_list(tag, ordered=False)
+                        notebook_cells.append({
+                            "cell_type": "markdown",
+                            "metadata": {},
+                            "source": [list_items + "\n"]
+                        })
+                        seen_li_elems.add(str(tag))
+
+                elif tag.name == 'img':
+                    pattern = r'<img[^>]*src="([^"]*)"'
+                    # Search for the pattern
+                    match = re.search(pattern, str(tag))
+
+                    # Check if a match was found and print the src valueC:\Users\dunfred\Documents\Turing\Generate Gemini Notebook\query_files\FoodAppBusiness.csv
+                    if match:
+                        base64_image = match.group(1)                    
+                        img_base64_str = f'![Plot {img_counter}](data:image/png;base64,{base64_image})'
+                        notebook_cells.append({
+                                "cell_type": "markdown",
+                                "metadata": {},
+                                "source": [img_base64_str + "\n"]
+                            })
+                        img_counter += 1
 
         # Notebook JSON structure
         notebook = {
@@ -187,6 +231,9 @@ class IPYNBGenerator:
     def process_nested_list(self, tag, level=0, ordered=False):
         items = []
         indent = '  ' * level
+        prefix_no = 0
+        seen_list_elems = set()
+
         for li in tag.find_all('li', recursive=False):
             nested_ul = li.find('ul')
             nested_ol = li.find('ol')
@@ -198,17 +245,34 @@ class IPYNBGenerator:
                 nested_ol.extract()
 
             # Get the text for the current list item
-            prefix = '1. ' if ordered else '- '
+            prefix = f'{prefix_no+1}. ' if ordered else '- '
+
+            # Find all <code> tags and replace them with backticks
+            for code_tag in li.find_all('code'):
+                code_tag.insert_before('`')
+                code_tag.insert_after('`')
+                code_tag.unwrap()
+
+            # # Find all <strong> tags and replace them with astericks
+            for code_tag in li.find_all('strong'):
+                code_tag.insert_before('**')
+                code_tag.insert_after('**')
+                code_tag.unwrap()
+
             items.append(indent + prefix + li.get_text().strip())
+            seen_list_elems.add(indent + prefix + li.get_text().strip())
 
             # Reinsert and process nested lists
-            if nested_ul:
+            if nested_ul and nested_ul not in seen_list_elems:
                 items.append(self.process_nested_list(nested_ul, level + 1, ordered=False))
                 li.append(nested_ul)
-            if nested_ol:
+                seen_list_elems.add(nested_ul)
+
+            if nested_ol and nested_ul not in seen_list_elems:
                 items.append(self.process_nested_list(nested_ol, level + 1, ordered=True))
                 li.append(nested_ol)
-
+                seen_list_elems.add(nested_ol)
+            prefix_no += 1
         return '\n'.join(items)
 
 
