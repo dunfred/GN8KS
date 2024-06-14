@@ -1,6 +1,6 @@
 import base64
-from datetime import datetime
 import os
+import re
 import time
 import json
 import random
@@ -9,6 +9,7 @@ import pyperclip
 import platform
 import pandas as pd
 from pathlib import Path
+from datetime import datetime
 from selenium import webdriver
 from collections import defaultdict
 from selenium.webdriver.common.by import By
@@ -20,7 +21,7 @@ from pynput.keyboard import Key as PyKey, Controller
 from pprint import pprint
 
 from bake_notebook import IPYNBGenerator
-from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
+from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_error_code_counts, update_prompt_output
 
 ''' SAMPLE `jobs.json` file template
 {
@@ -130,6 +131,17 @@ for task in JOBS['tasks']:
         # Open Gemini
         driver.get('https://gemini.google.com/')
 
+        ERROR_COUNTS_DICT = defaultdict(int, {
+            'ModuleNotFoundError': 0,
+            'FileNotFoundError': 0, 
+            'KeyError': 0, 
+            'ValueError': 0, 
+            'TypeError': 0, 
+            'AttributeError': 0, 
+            'NameError': 0, 
+            'SyntaxError': 0
+        })
+
         try:
             WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.TAG_NAME, 'bard-sidenav-content')))
             main_container_tag_name = 'bard'
@@ -193,10 +205,14 @@ for task in JOBS['tasks']:
                 files_uploaded = True
                 time.sleep(3)
 
+            # Only wait this long if files were uploaded in this turn
+            if not is_first_file: # This variable will always be False whenever a file is uploaded
+                print('[x] Waiting a couple more seconds after file upload before cliking submit button.')
+                time.sleep(20)
+
             # Submit the query.
             submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
 
-            time.sleep(20)
             try:
                 WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
             except Exception:
@@ -300,6 +316,15 @@ for task in JOBS['tasks']:
 
             notebook_response = pyperclip.paste()
 
+            # Find all traceback blocks
+            tracebacks_str = "\n".join(re.findall(r'Traceback \(most recent call last\):.*?(?=\n\n|\Z)', notebook_response, re.DOTALL))
+
+            # Count all error codes witnessed in this turn's outputs
+            update_error_code_counts(
+                ERROR_COUNTS_DICT,
+                tracebacks_str
+            )
+            
             # Update the local backup data with latest prompt data if already exists, else add as new
             update_prompt_output(
                 main_dict       = OUTPUT,
@@ -311,7 +336,8 @@ for task in JOBS['tasks']:
                     'response': notebook_response,
                     'prompt_files': prompt_files,
                     'prompt_file_urls': prompt_file_urls,
-                    'timestamp': str(datetime.now())
+                    'timestamp': str(datetime.now()),
+                    **ERROR_COUNTS_DICT
                 }
             )
             
@@ -328,7 +354,8 @@ for task in JOBS['tasks']:
                 'response': notebook_response,
                 'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
                 'prompt_file_urls': ", ".join(prompt_file_urls),
-                'timestamp': datetime.now()
+                'timestamp': datetime.now(),
+                **ERROR_COUNTS_DICT
             })
             ensure_directory_exists('time-tracksheet/')
 

@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -124,4 +125,15 @@ class LastFooterElement:
             footer_element = parent_element.find_element(By.XPATH, f"following-sibling::div[contains(@class, '{self.footer_class}')]")
             return footer_element
         return False
+
+def update_error_code_counts(error_counts_dict, string):
+    # Define the error types to count
+    error_types = [
+        'ModuleNotFoundError',
+        'FileNotFoundError', 'KeyError', 'ValueError', 'TypeError', 'AttributeError', 
+        'NameError', 'SyntaxError'
+    ]
+
+    for errorType in error_types:
+        error_counts_dict[errorType] += string.count(f"{errorType}:")
 
