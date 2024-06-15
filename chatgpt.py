@@ -289,7 +289,7 @@ for task in JOBS['tasks']:
             combined_positions = sorted(element_positions + image_positions, key=lambda x: x[1])
 
             for item, _ in combined_positions:
-                if item.tag_name == 'img':
+                if item.tag_name == 'img' or "mb-3 max-w-[80%]" in item.get_attribute('class'):
                     soup = BeautifulSoup('', 'html.parser')
                     # Create an img tag
                     img_tag = soup.new_tag('img', src=base64_plot_images[plot_images.index(item)])
