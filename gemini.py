@@ -9,6 +9,7 @@ import pyperclip
 import platform
 import pandas as pd
 from pathlib import Path
+from copy import deepcopy
 from datetime import datetime
 from selenium import webdriver
 from collections import defaultdict
@@ -19,7 +20,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from pynput.keyboard import Key as PyKey, Controller
 from pprint import pprint
-
 from bake_notebook import IPYNBGenerator
 from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output
 
@@ -224,7 +224,12 @@ for task in JOBS['tasks']:
                     WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
             submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
-            submit_prompt_btn.click()
+            try:
+                submit_prompt_btn.click()
+            except Exception:
+                time.sleep(30) # Wait 30 more seconds and try again
+                submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
+                submit_prompt_btn.click()
 
             # Define the locator for the element you want to observe
             observed_element_locator = (By.CSS_SELECTOR, "[class^='response-container-content']")
@@ -234,7 +239,7 @@ for task in JOBS['tasks']:
             WebDriverWait(driver, 90).until(EC.presence_of_element_located(observed_element_locator))
 
             # Wait for the text "Analyzing..." to appear in the element or its nested elements
-            WebDriverWait(driver, 210).until(TextInLastElement(observed_element_locator))
+            WebDriverWait(driver, 240).until(TextInLastElement(observed_element_locator))
 
             # End timing
             end_time_to_trigger_ice = time.time()
@@ -315,9 +320,10 @@ for task in JOBS['tasks']:
             time.sleep(3)
 
             notebook_response = pyperclip.paste()
+            notebook_response_copy = deepcopy(notebook_response)
 
             # Find all traceback blocks
-            tracebacks_str = "\n".join(re.findall(r'Traceback \(most recent call last\):.*?(?=\n\n|\Z)', notebook_response, re.DOTALL))
+            tracebacks_str = "\n".join(re.findall(r'Traceback \(most recent call last\):.*?(?=\n\n|\Z)', notebook_response_copy, re.DOTALL))
 
             # Count all error codes witnessed in this turn's outputs
             update_error_code_counts(
@@ -326,8 +332,8 @@ for task in JOBS['tasks']:
             )
 
             # Perform the insertion of plot images into notebook string
-            notebook_response = replace_json_tags(
-                notebook_str=notebook_response,
+            notebook_response_copy = replace_json_tags(
+                notebook_str=notebook_response_copy,
                 base64_images=[
                     img.get_attribute('src').split('base64,')[1] if 'base64,' in img.get_attribute('src')\
                     else img.get_attribute('src')\
@@ -344,6 +350,7 @@ for task in JOBS['tasks']:
                     'time_to_ice': time_to_trigger_ice,
                     'end_to_end_time': end_to_end_time,
                     'response': notebook_response,
+                    'response_with_image': notebook_response_copy,
                     'prompt_files': prompt_files,
                     'prompt_file_urls': prompt_file_urls,
                     'timestamp': str(datetime.now()),
@@ -362,6 +369,7 @@ for task in JOBS['tasks']:
                 'time_to_ice': time_to_trigger_ice,
                 'end_to_end_time': end_to_end_time,
                 'response': notebook_response,
+                'response_with_image': notebook_response_copy,
                 'prompt_files': ",".join([f.split('/')[-1] for f in prompt_files]),
                 'prompt_file_urls': ", ".join(prompt_file_urls),
                 'timestamp': datetime.now(),

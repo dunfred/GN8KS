@@ -77,7 +77,7 @@ class IPYNBGenerator:
         # Loop through the list of dictionaries and process each one
         for prompt_index, item in enumerate(text_dict_list):
             user_query = item['prompt']
-            notebook_string = item['response']
+            notebook_string = item['response_with_image']
             prompt_files_str = ",".join([f.split('/')[-1] for f in item['prompt_files']])
             prompt_file_urls = ", ".join(item["prompt_file_urls"])
             

@@ -143,7 +143,7 @@ for task in JOBS['tasks']:
 
             # Generate full path to all prompt files
             files_str = list(map(lambda x: str(Path(x).resolve()), prompt_files))
-
+            time.sleep(3)
             prompt_elem = driver.find_element(By.XPATH, input_text_elem_xpath)
             prompt_elem.send_keys(user_query)
 
@@ -195,10 +195,15 @@ for task in JOBS['tasks']:
             # Submit the query.
             submit_prompt_btn_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/button'
 
-            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+            WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
             submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
-            submit_prompt_btn.click()
+            try:
+                submit_prompt_btn.click()
+            except Exception:
+                time.sleep(30) # Wait 30 more seconds and try again
+                submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
+                submit_prompt_btn.click()
 
             # Define the locator for the element you want to observe
             observed_element_locator = (By.CSS_SELECTOR, '[class*="group/conversation-turn"][class*="agent-turn"]')
@@ -340,6 +345,10 @@ for task in JOBS['tasks']:
             ensure_directory_exists('time-tracksheet/')
             df_filepath = 'time-tracksheet/gpt-prompts-time-track-sheet.xlsx'
             append_to_excel(df_filepath, new_data)
+        
+        # To avoid getting logged out once in a while due to security reasons,
+        # Will intentionally wait for a few more seconds before moving to next task 
+        time.sleep(15)
 
         # Instantiate class for generating notebook after all prompts are done
         ipynb_gen = IPYNBGenerator(
