@@ -239,7 +239,7 @@ for task in JOBS['tasks']:
             WebDriverWait(driver, 90).until(EC.presence_of_element_located(observed_element_locator))
 
             # Wait for the text "Analyzing..." to appear in the element or its nested elements
-            WebDriverWait(driver, 240).until(TextInLastElement(observed_element_locator))
+            WebDriverWait(driver, 310).until(TextInLastElement(observed_element_locator))
 
             # End timing
             end_time_to_trigger_ice = time.time()
@@ -266,7 +266,7 @@ for task in JOBS['tasks']:
             response_footer_locator = (By.XPATH, "following-sibling::div[contains(@class, 'response-container-footer')]")
 
             # Wait for the last footer element to be present
-            response_footer_element = WebDriverWait(driver, 210).until(LastFooterElement(observed_element_locator, "response-container-footer"))
+            response_footer_element = WebDriverWait(driver, 310).until(LastFooterElement(observed_element_locator, "response-container-footer"))
             # print("RESPONSE FOOTER ELEM:", response_footer_element)
 
             time.sleep(3)
@@ -279,7 +279,7 @@ for task in JOBS['tasks']:
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 # Now try again
                 more_options_menu_element_xpath = './/*[@aria-label="Show more options" and @mattooltip="More" and contains(@class, "mat-mdc-menu-trigger")]'
-                WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, more_options_menu_element_xpath)))
+                WebDriverWait(driver, 90).until(EC.element_to_be_clickable((By.XPATH, more_options_menu_element_xpath)))
 
             more_options_menu = response_footer_element.find_element(By.XPATH, more_options_menu_element_xpath)
             more_options_menu.click()
