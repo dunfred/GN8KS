@@ -15,15 +15,15 @@ gpt:
 
 gemini:
   xpaths:
-    input_text_elem_xpath: '//*[@id="app-root"]/main/side-navigation-v2/{}-sidenav-container/{}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
-    upload_files_elem_xpath_1: '//*[@id="app-root"]/main/side-navigation-v2/{}-sidenav-container/{}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
-    upload_files_elem_xpath_2: '//*[@id="app-root"]/main/side-navigation-v2/{}-sidenav-container/{}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/uploader/div[1]/div/button'
+    input_text_elem_xpath: '//*/rich-textarea/div[1]'
+    upload_files_elem_xpath_1: '//*/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
+    upload_files_elem_xpath_2: '//*/input-area-v2/div/div/div[4]/div/uploader/div[1]/div/button'
     upload_local_file_xpath: '//*[@id="file-uploader-local"]'
-    submit_prompt_btn_xpath_1: '//*[@id="app-root"]/main/side-navigation-v2/{}-sidenav-container/{}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
-    submit_prompt_btn_xpath_2: '//*[@id="app-root"]/main/side-navigation-v2/{}-sidenav-container/{}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/div/button'
-    submit_prompt_btn_xpath_3: '//*[@id="app-root"]/main/side-navigation-v2/{}-sidenav-container/{}-sidenav-content/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
+    submit_prompt_btn_xpath_1: '//*/input-area-v2/div/div/div[4]/div/div/button'
+    submit_prompt_btn_xpath_2: '//*/input-area-v2/div/div/div[3]/div/div/button'
+    submit_prompt_btn_xpath_3: '//*/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
     observed_element_locator_xpath: "[class^='response-container-content']"
     response_footer_locator_xpath: "following-sibling::div[contains(@class, 'response-container-footer')]"
     more_options_menu_element_xpath_1: ".//message-actions/div/div/div[2]/button"
-    more_options_menu_element_xpath_2: './/*[@aria-label="Show more options" and @mattooltip="More" and contains(@class, "mat-mdc-menu-trigger")]'
-    copy_response_xpath: "//*[contains(@id, 'mat-menu-panel-')]/div/div/button"
+    more_options_menu_element_xpath_2: './/*[@aria-label="Show more options" and @mattooltip="More"]'
+    copy_response_xpath: '//*/button[@aria-label="Copy"]'

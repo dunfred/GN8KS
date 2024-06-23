@@ -274,7 +274,7 @@ for task in JOBS['tasks']:
 
             time.sleep(3)
             # Finding and clicking menu action bar to show copy button
-            more_options_menu_element_xpath = config["more_options_menu_element_xpath"]
+            more_options_menu_element_xpath = config["more_options_menu_element_xpath_1"]
             try:
                 WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, )))
             except Exception:
