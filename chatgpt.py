@@ -116,7 +116,7 @@ service = ChromeService(executable_path=chromedriver_path)
 driver = webdriver.Chrome(service=service, options=options)
 
 # Get xpath config object
-config = get_config()
+config = get_config(type= "gpt")
 
 # Open a new session and run all prompts for each task/job
 for task in JOBS['tasks']:

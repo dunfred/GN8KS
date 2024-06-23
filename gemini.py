@@ -21,7 +21,7 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from pynput.keyboard import Key as PyKey, Controller
 from pprint import pprint
 from bake_notebook import IPYNBGenerator
-from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output
+from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output, get_config
 
 ''' SAMPLE `jobs.json` file template
 {
@@ -111,6 +111,9 @@ def random_delay(a=2, b=5):
 service = ChromeService(executable_path=chromedriver_path)
 driver = webdriver.Chrome(service=service, options=options)
 
+# Get xpath config object
+config = get_config(type= "gemini")
+
 
 # Open a new session and run all prompts for each task/job
 for task in JOBS['tasks']:
@@ -151,7 +154,7 @@ for task in JOBS['tasks']:
         for idx, user_query in enumerate(task['prompts']):
             print(f'[x] {task_id} - Starting Prompt {idx+1}: {user_query}')
             # Find the input text field elem
-            input_text_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
+            input_text_elem_xpath = config["input_text_elem_xpath"].format(main_container_tag_name, main_container_tag_name)
 
             WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
 
@@ -169,15 +172,15 @@ for task in JOBS['tasks']:
             if not files_uploaded:
                 for file in files_str:
                     if is_first_file:
-                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
+                        upload_files_elem_xpath = config["upload_files_elem_xpath_1"](main_container_tag_name, main_container_tag_name)
                     else:
-                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/uploader/div[1]/div/button'
+                        upload_files_elem_xpath = config["upload_files_elem_xpath_2"](main_container_tag_name, main_container_tag_name)
 
                     WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
 
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
-                    upload_local_file_xpath = '//*[@id="file-uploader-local"]'
+                    upload_local_file_xpath = config["upload_local_file_xpath"]
                     WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
                     local_file_input = driver.find_element(By.XPATH, upload_local_file_xpath)
                     local_file_input.click() 
@@ -211,16 +214,16 @@ for task in JOBS['tasks']:
                 time.sleep(20)
 
             # Submit the query.
-            submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
+            submit_prompt_btn_xpath = config["submit_prompt_btn_xpath_1"].format(main_container_tag_name, main_container_tag_name)
 
             try:
                 WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
             except Exception:
-                submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/div/button'
+                submit_prompt_btn_xpath = config["submit_prompt_btn_xpath_2"].format(main_container_tag_name, main_container_tag_name)
                 try:
                     WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
                 except Exception:
-                    submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
+                    submit_prompt_btn_xpath = config["submit_prompt_btn_xpath_3"].format(main_container_tag_name, main_container_tag_name)
                     WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
             submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
@@ -232,7 +235,7 @@ for task in JOBS['tasks']:
                 submit_prompt_btn.click()
 
             # Define the locator for the element you want to observe
-            observed_element_locator = (By.CSS_SELECTOR, "[class^='response-container-content']")
+            observed_element_locator = (By.CSS_SELECTOR, config["observed_element_locator_xpath"])
             start_time_to_trigger_ice = time.time()
 
             # Wait for the element to be present
@@ -263,7 +266,7 @@ for task in JOBS['tasks']:
                 gemini_reponse_elem = None
 
             # Define the locator for the footer elements
-            response_footer_locator = (By.XPATH, "following-sibling::div[contains(@class, 'response-container-footer')]")
+            response_footer_locator = (By.XPATH, config["response_footer_locator_xpath"])
 
             # Wait for the last footer element to be present
             response_footer_element = WebDriverWait(driver, 210).until(LastFooterElement(observed_element_locator, "response-container-footer"))
@@ -271,21 +274,21 @@ for task in JOBS['tasks']:
 
             time.sleep(3)
             # Finding and clicking menu action bar to show copy button
-            more_options_menu_element_xpath = ".//message-actions/div/div/div[2]/button"
+            more_options_menu_element_xpath = config["more_options_menu_element_xpath"]
             try:
                 WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, )))
             except Exception:
                 # Scroll to the bottom of the page
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 # Now try again
-                more_options_menu_element_xpath = './/*[@aria-label="Show more options" and @mattooltip="More" and contains(@class, "mat-mdc-menu-trigger")]'
+                more_options_menu_element_xpath = config["more_options_menu_element_xpath_2"]
                 WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, more_options_menu_element_xpath)))
 
             more_options_menu = response_footer_element.find_element(By.XPATH, more_options_menu_element_xpath)
             more_options_menu.click()
 
             # Finding and clicking the actual copy button
-            copy_response_xpath = "//*[contains(@id, 'mat-menu-panel-')]/div/div/button"
+            copy_response_xpath = config["copy_response_xpath"]
             WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, copy_response_xpath)))
             copy_response_button = response_footer_element.find_element(By.XPATH, copy_response_xpath)
             copy_response_button.click()

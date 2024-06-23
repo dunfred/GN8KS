@@ -153,7 +153,7 @@ def replace_json_tags(notebook_str, base64_images):
 
     return re.sub(pattern, replacement_func, notebook_str)
 
-def get_config(file_path='xpath_config.yml'):
+def get_config(file_path='xpath_config.yml', type= "gpt"):
     """
     Reads configurations from a YAML file.
 
@@ -170,7 +170,11 @@ def get_config(file_path='xpath_config.yml'):
     try:
         with open(file_path, 'r') as file:
             config = yaml.safe_load(file)
-        return config['gpt']['xpaths']
+        
+        if type == "gpt":
+            return config['gpt']['xpaths']
+        
+        return config['gemini']['xpaths']
 
     except FileNotFoundError as fnf_error:
         raise FileNotFoundError(f"The configuration file {file_path} was not found.") from fnf_error
