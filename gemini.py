@@ -172,9 +172,9 @@ for task in JOBS['tasks']:
             if not files_uploaded:
                 for file in files_str:
                     if is_first_file:
-                        upload_files_elem_xpath = config["upload_files_elem_xpath_1"](main_container_tag_name, main_container_tag_name)
+                        upload_files_elem_xpath = config["upload_files_elem_xpath_1"].format(main_container_tag_name, main_container_tag_name)
                     else:
-                        upload_files_elem_xpath = config["upload_files_elem_xpath_2"](main_container_tag_name, main_container_tag_name)
+                        upload_files_elem_xpath = config["upload_files_elem_xpath_2"].format(main_container_tag_name, main_container_tag_name)
 
                     WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
 
