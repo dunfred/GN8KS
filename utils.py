@@ -1,5 +1,6 @@
 import os
 import re
+import yaml
 import pandas as pd
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -152,3 +153,26 @@ def replace_json_tags(notebook_str, base64_images):
 
     return re.sub(pattern, replacement_func, notebook_str)
 
+def get_config(file_path='xpath_config.yml'):
+    """
+    Reads configurations from a YAML file.
+
+    Args:
+        file_path (str): Path to the YAML configuration file.
+
+    Returns:
+        dict: A dictionary containing the configuration.
+
+    Raises:
+        FileNotFoundError: If the configuration file is not found.
+        yaml.YAMLError: If there is an error in parsing the YAML file.
+    """
+    try:
+        with open(file_path, 'r') as file:
+            config = yaml.safe_load(file)
+        return config['gpt']['xpaths']
+
+    except FileNotFoundError as fnf_error:
+        raise FileNotFoundError(f"The configuration file {file_path} was not found.") from fnf_error
+    except yaml.YAMLError as yaml_error:
+        raise yaml.YAMLError(f"Error parsing the YAML file: {yaml_error}") from yaml_error

@@ -21,7 +21,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
-from utils import GPTSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
+from utils import GPTSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output, get_config
 
 # Ensure the jobs.json file is added before proceeding.
 # You can also check README.md  file to see how the "jobs.json" 
@@ -115,6 +115,8 @@ def random_delay(a=2, b=5):
 service = ChromeService(executable_path=chromedriver_path)
 driver = webdriver.Chrome(service=service, options=options)
 
+# Get xpath config object
+config = get_config()
 
 # Open a new session and run all prompts for each task/job
 for task in JOBS['tasks']:
@@ -138,7 +140,7 @@ for task in JOBS['tasks']:
         for idx, user_query in enumerate(task['prompts']):
             print(f'[x] {task_id} - Starting Prompt {idx+1}: {user_query}')
             # Find the input text field elem
-            input_text_elem_xpath = '//*[@id="prompt-textarea"]'
+            input_text_elem_xpath = config['input_text_elem_xpath']
             WebDriverWait(driver, 120).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
 
             # Generate full path to all prompt files
@@ -153,17 +155,17 @@ for task in JOBS['tasks']:
             # Ensures all files are uploaded just once.
             if not files_uploaded:
                 for file in files_str:
-                    upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
+                    upload_files_elem_xpath = config['upload_files_elem_xpath']
                     WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
                     # Construct the XPath to find the upload file element with this id prefix and text match
-                    upload_local_file_xpath = '//*[starts-with(@id, "radix-:r")]/div[4][text()="Upload from computer"]'
+                    upload_local_file_xpath = config['upload_local_file_xpath_1']
 
                     try:
                         WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
                     except Exception:
-                        upload_local_file_xpath = '//*[starts-with(@id, "radix-:r")]/div[3][text()="Upload from computer"]'
+                        upload_local_file_xpath = config['upload_local_file_xpath_2']
                         WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, upload_local_file_xpath)))
 
                     local_file_input = driver.find_element(By.XPATH, upload_local_file_xpath)
@@ -193,7 +195,7 @@ for task in JOBS['tasks']:
                 time.sleep(20)
 
             # Submit the query.
-            submit_prompt_btn_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/button'
+            submit_prompt_btn_xpath = config['submit_prompt_btn_xpath']
 
             WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
@@ -206,7 +208,7 @@ for task in JOBS['tasks']:
                 submit_prompt_btn.click()
 
             # Define the locator for the element you want to observe
-            observed_element_locator = (By.CSS_SELECTOR, '[class*="group/conversation-turn"][class*="agent-turn"]')
+            observed_element_locator = (By.CSS_SELECTOR, config['observed_element_locator_xpath'])
             start_time = time.time()
 
             # Wait for the element to be present
@@ -217,7 +219,7 @@ for task in JOBS['tasks']:
                 observed_element_locator, 
                 "Analyzed", 
                 idx+1,
-                turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "juice:-ml-3")]')
+                turn_menu_item_locator = (By.XPATH, config['turn_menu_item_locator_xpath'])
                 ))
 
             # Record the time when "Analysis complete" appears
@@ -233,11 +235,11 @@ for task in JOBS['tasks']:
 
             # Ensure the bot is truly done with analysis by looking for the 
             # menu popup that every completed conversation has
-            turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "juice:-ml-3")]')
+            turn_menu_item_locator = (By.XPATH, config["turn_menu_item_locator_xpath"])
             WebDriverWait(gpt_reponse_elem, 180).until(EC.presence_of_element_located(turn_menu_item_locator))
 
             # Grab all GPT code and text response blocks while maintaining order
-            response_blocks = gpt_reponse_elem.find_elements(By.XPATH, './/div[(normalize-space(@class) = "overflow-hidden") or @data-message-author-role="assistant"]')
+            response_blocks = gpt_reponse_elem.find_elements(By.XPATH, config['response_block_xpath'])
             # Sort in the order they appear on screen
             response_blocks = sorted(response_blocks, key=lambda x: x.location['y'])
 
@@ -264,11 +266,7 @@ for task in JOBS['tasks']:
 
                 time.sleep(3)
             else:
-                plot_images = gpt_reponse_elem.find_elements(By.XPATH, '''
-                    .//div[
-                        @class = "mb-3 max-w-[80%]"
-                    ]
-                ''')
+                plot_images = gpt_reponse_elem.find_elements(By.XPATH, config["plot_images_xpath"])
                 print('[x] Found', len(plot_images), 'Image' if len(plot_images) ==1 else 'Images')
 
                 if plot_images:

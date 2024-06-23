@@ -1,0 +1,15 @@
+gpt:
+  xpaths:
+    input_text_elem_xpath: '//*[@id="prompt-textarea"]'
+    upload_files_elem_xpath: '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
+    upload_local_file_xpath_1: '//*[starts-with(@id, "radix-:r")]/div[4][text()="Upload from computer"]'
+    upload_local_file_xpath_2: '//*[starts-with(@id, "radix-:r")]/div[3][text()="Upload from computer"]'
+    submit_prompt_btn_xpath: '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/button'
+    observed_element_locator_xpath: '[class*="group/conversation-turn"][class*="agent-turn"]'
+    turn_menu_item_locator_xpath: './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "juice:-ml-3")]'
+    response_block_xpath: './/div[(normalize-space(@class) = "overflow-hidden") or @data-message-author-role="assistant"]'
+    plot_images_xpath: |
+      .//div[
+                        @class = "mb-3 max-w-[80%]"
+                    ]
+    
