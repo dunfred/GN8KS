@@ -9,6 +9,7 @@ import pyperclip
 import platform
 import pandas as pd
 from pathlib import Path
+import variables as vars_
 from copy import deepcopy
 from datetime import datetime
 from selenium import webdriver
@@ -21,7 +22,9 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from pynput.keyboard import Key as PyKey, Controller
 from pprint import pprint
 from bake_notebook import IPYNBGenerator
-from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output, get_config
+from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output, get_config, backup_and_delete_folder
+import win32com.client
+import pythoncom
 
 ''' SAMPLE `jobs.json` file template
 {
@@ -127,6 +130,25 @@ for task in JOBS['tasks']:
         # Ensure the output directory exists
         base_dir = os.path.dirname(os.path.abspath(__file__))
         output_dir = os.path.join(base_dir, 'notebooks', f"ID_{task_id}")
+
+        # mounted gdrive file sync (windows compatible)
+        if platform.system() == "Windows" and os.path.exists(vars_.GDRIVE_MOUNT_PATH_WINDOWS):
+            # check if rater shortcut is available inside mounted gdrive
+            rater_dir_shortcut = os.path.join(vars_.GDRIVE_MOUNT_PATH_WINDOWS, "rater_"+JOBS["rater_id"]+".lnk")
+            if os.path.exists(rater_dir_shortcut):
+                # we have the rater path now, we can create the row directories now
+                # reroute output path to mounted google drive and rater folder shortcut
+                shell = win32com.client.Dispatch("WScript.Shell", pythoncom.CoInitialize())
+                shortcut = shell.CreateShortCut(rater_dir_shortcut)
+                output_dir = os.path.join(shortcut.Targetpath, f"ID_{task_id}")
+            else:
+                print("Found mounted gdrive, But no rater shortcut found inside 'My Drive'.")
+        else:
+            print("No mounted gdrive found.")
+        
+        # If current row directory already exists in gdrive, make a backup of it and delete the current one
+        backup_and_delete_folder(output_dir, RATER_ID, task_id)
+        time.sleep(5)
         ensure_directory_exists(output_dir)
 
         print(f'[x] Started Task ID: {task_id}.')

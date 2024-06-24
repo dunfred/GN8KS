@@ -2,9 +2,11 @@ import os
 import re
 import yaml
 import pandas as pd
+import variables as vars_
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import shutil
 
 
 # Function to ensure the directory exists
@@ -153,12 +155,14 @@ def replace_json_tags(notebook_str, base64_images):
 
     return re.sub(pattern, replacement_func, notebook_str)
 
-def get_config(file_path='xpath_config.yml', type= "gpt"):
+def get_config(file_path='xpath_config.yml', type="gpt"):
     """
     Reads configurations from a YAML file.
 
     Args:
         file_path (str): Path to the YAML configuration file.
+        type (str): Type of configuration to retrieve. Options are "gpt" or "gemini".
+                    Defaults to "gpt".
 
     Returns:
         dict: A dictionary containing the configuration.
@@ -168,15 +172,53 @@ def get_config(file_path='xpath_config.yml', type= "gpt"):
         yaml.YAMLError: If there is an error in parsing the YAML file.
     """
     try:
+        # Open and read the YAML configuration file
         with open(file_path, 'r') as file:
             config = yaml.safe_load(file)
         
+        # Return the appropriate configuration based on the type argument
         if type == "gpt":
             return config['gpt']['xpaths']
         
         return config['gemini']['xpaths']
 
     except FileNotFoundError as fnf_error:
+        # Raise an error if the configuration file is not found
         raise FileNotFoundError(f"The configuration file {file_path} was not found.") from fnf_error
     except yaml.YAMLError as yaml_error:
+        # Raise an error if there is an issue parsing the YAML file
         raise yaml.YAMLError(f"Error parsing the YAML file: {yaml_error}") from yaml_error
+
+
+def backup_and_delete_folder(original_folder, rater_id, row_id):
+
+    """
+    Backs up and deletes row id folder already exist, create backup of it and delete the current folder.
+    
+    Parameters:
+    original_folder (str): The path to the original folder.
+    rater_id (int): The rater ID used for filename formatting.
+    row_id (int): The row ID used for filename formatting.
+    """
+
+
+    # If directory already exists and GPT and Gemini ipynb exisit, rename it (as a backup to undo if something goes wrong)
+    if not (os.path.exists(original_folder) and os.path.exists(os.path.join(original_folder, vars_.GEMINI_FILENAME_FORMAT.format(rater_id, row_id))) and os.path.exists(os.path.join(original_folder, vars_.GPT_FILENAME_FORMAT.format(rater_id, row_id)))):
+        return
+    
+    # Determine the backup folder name
+    backup_folder_base = f"{original_folder}_backup"
+    backup_number = 1
+    
+    while os.path.exists(f"{backup_folder_base}{backup_number}"):
+        backup_number += 1
+    
+    backup_folder = f"{backup_folder_base}{backup_number}"
+
+    # Copy the original folder to the new backup folder
+    shutil.copytree(original_folder, backup_folder)
+    print(f"Copied {original_folder} to {backup_folder}")
+
+    # Delete the original folder
+    shutil.rmtree(original_folder)
+    print(f"Deleted original folder {original_folder}")
