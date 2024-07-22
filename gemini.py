@@ -329,7 +329,7 @@ for task in JOBS['tasks']:
                 # Scroll to the bottom of the page
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 # Now try again
-                more_options_menu_element_xpath = './/*[@aria-label="Show more options" and @mattooltip="More" and contains(@class, "mat-mdc-menu-trigger")]'
+                more_options_menu_element_xpath = './/*[@aria-label="Show more options" and @mattooltip="More" and contains(@class, "-mdc-menu-trigger")]'
                 WebDriverWait(driver, 90).until(EC.element_to_be_clickable((By.XPATH, more_options_menu_element_xpath)))
 
             more_options_menu = response_footer_element.find_element(By.XPATH, more_options_menu_element_xpath)
