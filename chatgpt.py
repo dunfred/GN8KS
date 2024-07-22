@@ -97,6 +97,12 @@ def get_chromedriver_path():
     else:
         raise Exception("Unsupported operating system")
 
+# Supports linux64, mac-arm64, mac-x64, win32 and win64 arc
+system = platform.system()
+arch = platform.machine()
+# Get the system's username
+system_username = os.getlogin()
+print('System Username:', system_username)
 
 # Initialize WebDriver with the appropriate ChromeDriver
 chromedriver_path = get_chromedriver_path()
@@ -104,7 +110,25 @@ print('Chrome Driver Path:', chromedriver_path)
 
 # Configure Chrome options
 options = Options()
-options.add_experimental_option("debuggerAddress", "localhost:9333") # Your GPT's chrome profile port would be on port "9222"
+options.add_argument("--disable-gpu")  # This option is recommended to avoid hardware acceleration issues
+options.add_argument("--window-size=1920,1080")  # You can specify your desired window size
+options.add_argument('--no-sandbox')
+
+# Path to your existing user profile
+if system == "Windows":
+    options.add_argument(r'--user-data-dir=C:\selenium_chrome_profile_2')
+
+elif system == "Darwin":
+    options.add_argument(f'--user-data-dir=/Users/{system_username}/selenium_chrome_profile_2')
+
+elif system == "Linux":
+    options.add_argument(f'--user-data-dir=/home/{system_username}/selenium_chrome_profile_2')
+
+else:
+    raise Exception("Unsupported operating system")
+
+
+# options.add_experimental_option("debuggerAddress", "localhost:9333") # Your GPT's chrome profile port would be on port "9333"
 options.add_argument("--disable-blink-features=AutomationControlled")
 
 # Function to introduce random delays
@@ -114,6 +138,21 @@ def random_delay(a=2, b=5):
 # Initialize WebDriver with the appropriate ChromeDriver
 service = ChromeService(executable_path=chromedriver_path)
 driver = webdriver.Chrome(service=service, options=options)
+
+# Get the screen size
+screen_width = driver.execute_script("return screen.width;")
+screen_height = driver.execute_script("return screen.height;")
+
+# Calculate the window size and position
+window_width = int(screen_width * 0.8) if int(screen_width * 0.8) < 1180 else 1180
+window_height = screen_height if screen_height < 1080 else 1080
+# window_x = screen_width - window_width  # Align to the right
+# window_y = 0
+print('window_width', window_width)
+print('window_height', window_height)
+# Set the window size and position
+driver.set_window_rect(width=window_width, height=window_height)
+# driver.set_window_rect(x=window_x, y=window_y, width=window_width, height=window_height)
 
 
 # Open a new session and run all prompts for each task/job
@@ -133,7 +172,7 @@ for task in JOBS['tasks']:
         print(f'[x] Started Task ID: {task_id}.')
 
         # Open GPT
-        driver.get('https://chatgpt.com/')
+        driver.get('https://chatgpt.com/?model=gpt-4')
 
         for idx, user_query in enumerate(task['prompts']):
             print(f'[x] {task_id} - Starting Prompt {idx+1}: {user_query}')

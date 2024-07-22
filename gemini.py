@@ -93,6 +93,12 @@ def get_chromedriver_path():
     else:
         raise Exception("Unsupported operating system")
 
+# Supports linux64, mac-arm64, mac-x64, win32 and win64 arc
+system = platform.system()
+arch = platform.machine()
+# Get the system's username
+system_username = os.getlogin()
+print('System Username:', system_username)
 
 # Initialize WebDriver with the appropriate ChromeDriver
 chromedriver_path = get_chromedriver_path()
@@ -100,7 +106,25 @@ print('Chrome Driver Path:', chromedriver_path)
 
 # Configure Chrome options
 options = Options()
-options.add_experimental_option("debuggerAddress", "localhost:9222") # Your Gemini's chrome profile port would be on port "9222"
+# options.add_argument("--headless")
+options.add_argument("--disable-gpu")  # This option is recommended to avoid hardware acceleration issues
+options.add_argument("--window-size=1920,1080")  # You can specify your desired window size
+options.add_argument('--no-sandbox')
+
+# Path to your existing user profile
+if system == "Windows":
+    options.add_argument(r'--user-data-dir=C:\selenium_chrome_profile')
+
+elif system == "Darwin":
+    options.add_argument(f'--user-data-dir=/Users/{system_username}/selenium_chrome_profile')
+
+elif system == "Linux":
+    options.add_argument(f'--user-data-dir=/home/{system_username}/selenium_chrome_profile')
+
+else:
+    raise Exception("Unsupported operating system")
+
+# options.add_experimental_option("debuggerAddress", "localhost:9222") # Your Gemini's chrome profile port would be on port "9222"
 options.add_argument("--disable-blink-features=AutomationControlled")
 
 # Function to introduce random delays
@@ -111,6 +135,24 @@ def random_delay(a=2, b=5):
 service = ChromeService(executable_path=chromedriver_path)
 driver = webdriver.Chrome(service=service, options=options)
 
+# print("[x] The script will wait 10 seconds to make sure everything is loaded.")
+# time.sleep(10)
+
+# # Get the screen size
+screen_width = driver.execute_script("return screen.width;")
+screen_height = driver.execute_script("return screen.height;")
+
+# Calculate the window size and position
+window_width = int(screen_width * 0.8) if int(screen_width * 0.8) < 1180 else 1180
+window_height = screen_height if screen_height < 1080 else 1080
+# window_x = 0  # Align to the left
+# window_y = 0
+print('window_width', window_width)
+print('window_height', window_height)
+
+# Set the window size and position
+driver.set_window_rect(width=window_width, height=window_height)
+# driver.set_window_rect(x=window_x, y=window_y, width=window_width, height=window_height)
 
 # Open a new session and run all prompts for each task/job
 for task in JOBS['tasks']:
@@ -169,12 +211,11 @@ for task in JOBS['tasks']:
             if not files_uploaded:
                 for file in files_str:
                     if is_first_file:
-                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
+                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[2]/div/uploader/div[1]/div/button'
                     else:
-                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/uploader/div[1]/div/button'
+                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
 
                     WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
-
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
                     upload_local_file_xpath = '//*[@id="file-uploader-local"]'
@@ -220,8 +261,12 @@ for task in JOBS['tasks']:
                 try:
                     WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
                 except Exception:
-                    submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
-                    WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                    submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[2]/div/div[2]/button'
+                    try:
+                        WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                    except Exception:
+                        submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[1]/div/div[1]/rich-textarea/div[1]'
+                        WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
             submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
             try:
