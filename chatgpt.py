@@ -256,7 +256,7 @@ for task in JOBS['tasks']:
                 observed_element_locator, 
                 "Analyzed", 
                 idx+1,
-                turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "juice:-ml-3")]')
+                turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "ml-3")]')
                 ))
 
             # Record the time when "Analysis complete" appears
@@ -271,8 +271,8 @@ for task in JOBS['tasks']:
                 gpt_reponse_elem = None
 
             # Ensure the bot is truly done with analysis by looking for the 
-            # menu popup that every completed conversation has
-            turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "juice:-ml-3")]')
+            # action menu that every completed conversation has at the bottom
+            turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "ml-3")]')
             WebDriverWait(gpt_reponse_elem, 180).until(EC.presence_of_element_located(turn_menu_item_locator))
 
             # Grab all GPT code and text response blocks while maintaining order

@@ -210,12 +210,17 @@ for task in JOBS['tasks']:
             # Ensures all files are uploaded just once.
             if not files_uploaded:
                 for file in files_str:
-                    if is_first_file:
-                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[2]/div/uploader/div[1]/div/button'
-                    else:
-                        upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
+                    try:
+                        upload_files_elem_xpath = '//button[@aria-label="Open upload file menu" and contains(@class, "upload-card-button")]'
+                        WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
+                        print('Upload Files Elem Exists')
+                    except Exception:
+                        if is_first_file:
+                            upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[2]/div/uploader/div[1]/div/button'
+                        else:
+                            upload_files_elem_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[3]/div/uploader/div[1]/div/button'
 
-                    WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
+                        WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
                     upload_local_file_xpath = '//*[@id="file-uploader-local"]'
@@ -252,7 +257,8 @@ for task in JOBS['tasks']:
                 time.sleep(20)
 
             # Submit the query.
-            submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
+            submit_prompt_btn_xpath = '//button[@aria-label="Send message" and contains(@class, "send-button")]'
+            # submit_prompt_btn_xpath = f'//*[@id="app-root"]/main/side-navigation-v2/{main_container_tag_name}-sidenav-container/{main_container_tag_name}-sidenav-content/div/div/div[2]/chat-window/div[1]/div[2]/div[1]/input-area-v2/div/div/div[4]/div/div/button'
 
             try:
                 WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
