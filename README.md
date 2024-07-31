@@ -1,4 +1,4 @@
-# Automation Script for Running and Documenting Prompts v2.4.1
+# Automation Script for Running and Documenting Prompts v2.5.1
 
 This project aims to automate the process of running and documenting the results of various prompts and storing them into notebooks. 
 
@@ -6,8 +6,9 @@ This project aims to automate the process of running and documenting the results
 
 ## Requirements
 
-- Google Chrome version `125.0.6422.78` or higher
+- Google Chrome version `125.0.6422.78` or higher. You can always go [here](https://googlechromelabs.github.io/chrome-for-testing/) to download the appropriate chrome driver version you need as well.
 - A virtual environment with Python version 3.9 (You can also check `runtime.txt` for exact patch version I used)
+
 
 ## Setup
 
@@ -15,7 +16,7 @@ This project aims to automate the process of running and documenting the results
 
 2. Start two Chrome sessions in debug mode using one of the commands below depending on your Operating System:
 
-- ### Start Chrome Session For Gemini (Remember to replace the `<your-username>` with that of your system's)
+- ### Start Chrome Session For GEMINI (Remember to replace the `<your-username>` with that of your system's)
 
     **Windows:**
     ```sh
@@ -48,16 +49,16 @@ This project aims to automate the process of running and documenting the results
     google-chrome --remote-debugging-port=9333 --user-data-dir="/home/<your-username>/selenium_chrome_profile_2"
     ```
 
-3. Log into your Gemini account on the first chrome window.
+3. Log into your Gemini account on the first chrome window, and once you are done, kindly close the chrome window.
 
-4. Log into your ChatGPT account on the second chrome window.
+4. Log into your ChatGPT account on the second chrome window, and once you are done, kindly close the chrome window.
 
 5. For `Linux` and `Mac` users, you may get a permission error when trying to run the script because you need to explicitly give **execute permission/priviledge** to the chrome webdriver the script will try to use. To fix this, navigate to the project's `webdrivers` directory in terminal and give it that permission;
     ```bash
     cd webdrivers
     chmod +x chromedriver-[os_arc_type]
     ```
-    - The script supports linux64, mac-arm64, mac-x64, win32 and win64 arc, and it will automatically chose the webdriver which is best suited for your OS. If you don't know the one to give permission to, you should be able to tell which webdriver the script tried using from the error message you will receive. Or you can just check from the list below.
+    - The script supports linux64, mac-arm64, mac-x64, win32 and win64 arc, and it will automatically chose the webdriver which is best suited for your OS. If you don't know the one to give permission to, you should be able to tell which webdriver the script tried using from the error message you will receive. Or you can just check from the list below. If your Chrome version is different from the specified version for this tool, you can download the driver for it [here](https://googlechromelabs.github.io/chrome-for-testing/) and rename it with respect to your OS name and architecture as you see below.
         - `chromedriver-linux64`
         - `chromedriver-mac-arm64`
         - `chromedriver-mac-x64`
@@ -149,7 +150,7 @@ There can be an infinite number of tasks.
 
 ## Usage
 
-Once Chrome is running in debug mode and you are logged into Gemini:
+Make sure Chrome is NOT running in debug mode. (Don't start the chrome browser using the commands for starting Gemini or ChatGPT because the scripts will automatically start the chrome session using the last saved session on your system. In other words, the first time you opened both sessions and logged into Gemini and GPT is already stored on your system and the scripts will make use of this henceforth):
 
 1. Place your `jobs.json` file in the script directory.
 2. Run the script to start the automation process.
