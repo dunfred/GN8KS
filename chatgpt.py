@@ -172,7 +172,7 @@ for task in JOBS['tasks']:
         print(f'[x] Started Task ID: {task_id}.')
 
         # Open GPT
-        driver.get('https://chatgpt.com/?model=gpt-4')
+        driver.get('https://chatgpt.com/?model=gpt-4o')
 
         for idx, user_query in enumerate(task['prompts']):
             print(f'[x] {task_id} - Starting Prompt {idx+1}: {user_query}')

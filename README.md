@@ -6,7 +6,7 @@ This project aims to automate the process of running and documenting the results
 
 ## Requirements
 
-- Google Chrome version `125.0.6422.78` or higher. You can always go [here](https://googlechromelabs.github.io/chrome-for-testing/) to download the appropriate chrome driver version you need as well.
+- Google Chrome version `127.0.6533.99` or higher. You can always go [here](https://googlechromelabs.github.io/chrome-for-testing/) to download the appropriate chrome driver version you need as well.
 - A virtual environment with Python version 3.9 (You can also check `runtime.txt` for exact patch version I used)
 
 
@@ -280,3 +280,4 @@ Once you have populated the `reproducible-jobs.json` with your details:
     This should resolve the "no copy mechanism" error on Linux and allow you to use `pyperclip` for clipboard operations.
 
 2. Always make sure you pull latest updates which contains fixes or new features that have been added.
+3. If you run into any exceptions talking about Chrome driver not supporting your current Chrome version (Ex: ` Message: session not created: This version of ChromeDriver only supports Chrome version 125`), you can go [here](https://googlechromelabs.github.io/chrome-for-testing/) to download the webdriver version that matches your Chrome's browser's current version.
