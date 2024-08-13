@@ -1,22 +1,34 @@
 import io
+import json
 import os
 import gspread
 from dotenv import load_dotenv
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
 from google.auth.transport.requests import Request
-from google.oauth2.service_account import Credentials
-from oauth2client.service_account import ServiceAccountCredentials
-from googleapiclient.http import MediaIoBaseDownload
+from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import AuthorizedSession
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
-load_dotenv()
+load_dotenv(override=True)
 
 SHARED_FOLDER_ID = os.getenv("SHARED_FOLDER_ID")
 
 SPREAD_SHEET_ID = os.getenv("SPREAD_SHEET_ID")
 
-SERVICE_ACCOUNT_PATH = os.getenv("SERVICE_ACCOUNT_PATH")
+SERVICE_ACCOUNT_PATH = os.getenv("SERVICE_ACCOUNT_PATH", None)
+
+try:
+    with open('oauth.json', 'r') as jfp:
+        OAUTH_TOKEN_DATA = json.loads(jfp.read())
+except FileNotFoundError:
+    OAUTH_TOKEN_DATA = {}
+    raise('Please make sure you "oauth.json" file is added to this directory before proceeding!')
+except json.decoder.JSONDecodeError:
+    OAUTH_TOKEN_DATA = {}
+    raise('Your "oauth.json" file has syntax some issues, kindly fix them before proceeding.')
+
 
 class TaskProcessor:
     def __init__(self):
@@ -27,29 +39,32 @@ class TaskProcessor:
         self.spreadsheet_id = SPREAD_SHEET_ID
         self.credentials_path = SERVICE_ACCOUNT_PATH
 
+        token_uri =  "https://oauth2.googleapis.com/token",
+
         scoped_credentials = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/drive'
         ]
-        self.creds = Credentials.from_service_account_file(self.credentials_path)
-        self.scoped_creds = self.creds.with_scopes(scoped_credentials)
+        self.creds = Credentials(
+            token=OAUTH_TOKEN_DATA['access_token'],
+            refresh_token=OAUTH_TOKEN_DATA['refresh_token'],
+            token_uri=token_uri,
+            scopes=OAUTH_TOKEN_DATA['scope']
+        )
 
-        self.gc = gspread.client.Client(self.scoped_creds)
-        self.gc.session = AuthorizedSession(scoped_credentials)
-        
+        # Create an AuthorizedSession with the credentials
+        authorized_session = AuthorizedSession(self.creds)
+
+        # Initialize gspread with the AuthorizedSession
+        self.gc = gspread.Client(auth=self.creds)
+        self.gc.session = authorized_session
+
         # Access "GN8K Tracker" worksheet
         self.sheet = self.gc.open_by_key(self.spreadsheet_id).sheet1 #.worksheet("GN8K Tracker")
 
-        # Initialize Google Drive
-        gauth = GoogleAuth()
+        # Use the credentials to access the Google Drive API
+        self.drive = build('drive', 'v3', credentials=self.creds)
 
-        gauth.credentials = ServiceAccountCredentials.from_json_keyfile_name(
-            SERVICE_ACCOUNT_PATH, 
-            scopes=['https://www.googleapis.com/auth/drive']
-        )
-
-        # Initialize GoogleDrive instance
-        self.drive = GoogleDrive(gauth)
         print(self.drive)
 
     def fetch_tasks(self, initial_status='Rater Added Query', script_type="Gemini"):
@@ -77,46 +92,122 @@ class TaskProcessor:
                 (status == "Ready For Rating" and not link_value) or\
                 status == f"{s_to_check} Done {script_type} Pending":
                 filtered_rows.append(row)
+        print(len(filtered_rows), "Rows To Run")
 
         return filtered_rows
 
+
+
+    # def get_or_create_folder(self, parent_folder_id, folder_name):
+    #     # Query for the folder by name under the specified parent
+    #     folder_list = self.drive.ListFile({
+    #         'q': f"'{parent_folder_id}' in parents and title = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed=false"
+    #     }).GetList()
+        
+    #     if folder_list:
+    #         # If the folder exists, return the first match
+    #         return folder_list[0]['id']
+    #     else:
+    #         # Folder doesn't exist, create it
+    #         folder_metadata = {
+    #             'title': folder_name,
+    #             'mimeType': 'application/vnd.google-apps.folder',
+    #             'parents': [{'id': parent_folder_id}]
+    #         }
+    #         folder = self.drive.CreateFile(folder_metadata)
+    #         folder.Upload()
+    #         return folder['id']
+
+    # def skip_existing_file_in_drive(self, folder_id, file_path):
+    #     file_name = os.path.basename(file_path)
+        
+    #     # Search for the file with the same name in the folder
+    #     file_list = self.drive.ListFile({
+    #         'q': f"'{folder_id}' in parents and title = '{file_name}' and trashed=false"
+    #     }).GetList()
+        
+    #     if file_list:
+    #         # If the file exists, skip the upload
+    #         print(f"File already exists: {file_name}, skipping upload.")
+    #         return False
+    #     else:
+    #         # Upload the new file if it doesn't exist
+    #         file_drive = self.drive.CreateFile({'title': file_name, 'parents': [{'id': folder_id}]})
+    #         file_drive.SetContentFile(file_path)
+    #         file_drive.Upload()
+    #         print(f"Uploaded new file: {file_name} to Google Drive folder.")
+    #         return True
+
+    # def upload_folder(self, local_folder_path, task_id, rater_id, script_type="Gemini"):
+    #     # Get or create the folder
+    #     folder_id = self.get_or_create_folder(self.raters_folder_id, task_id)
+
+    #     notebook_links = {'Gemini': None, 'GPT': None}
+
+    #     # Upload all files in the local folder to this new Drive folder
+    #     for filename in os.listdir(local_folder_path):
+    #         # Search for the file with the same name in the folder
+    #         file_list = self.drive.ListFile({
+    #             'q': f"'{folder_id}' in parents and title = '{filename}' and trashed=false"
+    #         }).GetList()
+            
+    #         if file_list:
+    #             # If the file exists, skip the upload
+    #             print(f"File already exists: {filename}, skipping upload.")
+    #         else:
+    #             if str(script_type).lower() in str(filename).lower():
+    #                 # Upload the new file if it doesn't exist
+    #                 file_path = os.path.join(local_folder_path, filename)
+    #                 file_drive = self.drive.CreateFile({
+    #                     'title': filename,
+    #                     'parents': [{'id': folder_id}]
+    #                 })
+    #                 file_drive.SetContentFile(file_path)
+    #                 file_drive.Upload()
+
+    #                 # Check if the file is one of the notebooks and store its link
+    #                 if filename == f"Gemini_rater_{rater_id}_ID_{task_id}.ipynb":
+    #                     notebook_links['Gemini'] = file_drive['alternateLink']
+
+    #                 elif filename == f"GPT_rater_{rater_id}_ID_{task_id}.ipynb":
+    #                     notebook_links['GPT'] = file_drive['alternateLink']
+
+    #     return notebook_links
+
     def get_or_create_folder(self, parent_folder_id, folder_name):
         # Query for the folder by name under the specified parent
-        folder_list = self.drive.ListFile({
-            'q': f"'{parent_folder_id}' in parents and title = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed=false"
-        }).GetList()
-        
+        query = f"'{parent_folder_id}' in parents and name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed=false"
+        folder_list = self.drive.files().list(q=query).execute().get('files', [])
+
         if folder_list:
             # If the folder exists, return the first match
             return folder_list[0]['id']
         else:
             # Folder doesn't exist, create it
             folder_metadata = {
-                'title': folder_name,
+                'name': folder_name,
                 'mimeType': 'application/vnd.google-apps.folder',
-                'parents': [{'id': parent_folder_id}]
+                'parents': [parent_folder_id]
             }
-            folder = self.drive.CreateFile(folder_metadata)
-            folder.Upload()
+            folder = self.drive.files().create(body=folder_metadata, fields='id').execute()
             return folder['id']
 
     def skip_existing_file_in_drive(self, folder_id, file_path):
         file_name = os.path.basename(file_path)
-        
+
         # Search for the file with the same name in the folder
-        file_list = self.drive.ListFile({
-            'q': f"'{folder_id}' in parents and title = '{file_name}' and trashed=false"
-        }).GetList()
-        
+        query = f"'{folder_id}' in parents and name = '{file_name}' and trashed=false"
+        file_list = self.drive.files().list(q=query).execute().get('files', [])
+
         if file_list:
             # If the file exists, skip the upload
             print(f"File already exists: {file_name}, skipping upload.")
             return False
         else:
             # Upload the new file if it doesn't exist
-            file_drive = self.drive.CreateFile({'title': file_name, 'parents': [{'id': folder_id}]})
-            file_drive.SetContentFile(file_path)
-            file_drive.Upload()
+            file_metadata = {'name': file_name, 'parents': [folder_id]}
+            media = MediaFileUpload(file_path, resumable=True)
+            file_drive = self.drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
             print(f"Uploaded new file: {file_name} to Google Drive folder.")
             return True
 
@@ -129,10 +220,9 @@ class TaskProcessor:
         # Upload all files in the local folder to this new Drive folder
         for filename in os.listdir(local_folder_path):
             # Search for the file with the same name in the folder
-            file_list = self.drive.ListFile({
-                'q': f"'{folder_id}' in parents and title = '{filename}' and trashed=false"
-            }).GetList()
-            
+            query = f"'{folder_id}' in parents and name = '{filename}' and trashed=false"
+            file_list = self.drive.files().list(q=query).execute().get('files', [])
+
             if file_list:
                 # If the file exists, skip the upload
                 print(f"File already exists: {filename}, skipping upload.")
@@ -140,21 +230,19 @@ class TaskProcessor:
                 if str(script_type).lower() in str(filename).lower():
                     # Upload the new file if it doesn't exist
                     file_path = os.path.join(local_folder_path, filename)
-                    file_drive = self.drive.CreateFile({
-                        'title': filename,
-                        'parents': [{'id': folder_id}]
-                    })
-                    file_drive.SetContentFile(file_path)
-                    file_drive.Upload()
+                    file_metadata = {'name': filename, 'parents': [folder_id]}
+                    media = MediaFileUpload(file_path, resumable=True)
+                    file_drive = self.drive.files().create(body=file_metadata, media_body=media, fields='id,webViewLink').execute()
 
                     # Check if the file is one of the notebooks and store its link
                     if filename == f"Gemini_rater_{rater_id}_ID_{task_id}.ipynb":
-                        notebook_links['Gemini'] = file_drive['alternateLink']
+                        notebook_links['Gemini'] = file_drive.get('webViewLink')
 
                     elif filename == f"GPT_rater_{rater_id}_ID_{task_id}.ipynb":
-                        notebook_links['GPT'] = file_drive['alternateLink']
+                        notebook_links['GPT'] = file_drive.get('webViewLink')
 
         return notebook_links
+
 
     def update_task_row_data_in_tracker(self, task_id, prompt_index, prompt_response):
         # Find the row index by TASK_ID and update it
@@ -260,15 +348,29 @@ class TaskProcessor:
 
     # Function to get the file name and check if it exists locally
     def get_file_name_from_drive_link_and_download(self, file_url, local_dir='query_files'):
+        # ===============================================================
         # Extract the file ID from the URL
         file_id = file_url.split('/d/')[1].split('/')[0]
 
         # Get the file metadata and name
-        file = self.drive.CreateFile({'id': file_id})
-        file.FetchMetadata(fields='title,labels,mimeType')
-        file_name = file['title']
+        file = self.drive.files().get(fileId=file_id, fields='name, mimeType').execute()
+        file_name = file['name']
+        mime_type = file['mimeType']
+
         print('File Name:', file_name)
-        print('Mime type',file['mimeType'])
+        print('Mime Type:', mime_type)
+        # ===============================================================
+
+        # # Extract the file ID from the URL
+        # file_id = file_url.split('/d/')[1].split('/')[0]
+
+        # # Get the file metadata and name
+        # file = self.drive.CreateFile({'id': file_id})
+        # file.FetchMetadata(fields='title,labels,mimeType')
+        # file_name = file['title']
+        # print('File Name:', file_name)
+        # print('Mime type',file['mimeType'])
+        # ===============================================================
 
         # Ensure the local directory exists
         if not os.path.exists(local_dir):
@@ -280,14 +382,33 @@ class TaskProcessor:
             print(f"File '{file_name}' exists locally at: {local_file_path}")
             return local_file_path.replace('\\', '/')
 
+        # ===============================================================
         # Download the file to the local directory
         try:
-            file.GetContentFile(local_file_path)
+            request = self.drive.files().get_media(fileId=file_id)
+            fh = io.FileIO(local_file_path, 'wb')
+            downloader = MediaIoBaseDownload(fh, request)
+
+            done = False
+            while not done:
+                status, done = downloader.next_chunk()
+                print(f"Download progress: {int(status.progress() * 100)}%")
+
             print(f"File downloaded to: {local_file_path}")
-            return local_file_path
+            return local_file_path.replace('\\', '/')
         except Exception as e:
             print(f"Failed to download file: {e}")
             return None
+        # ===============================================================
+        # # Download the file to the local directory
+        # try:
+        #     file.GetContentFile(local_file_path)
+        #     print(f"File downloaded to: {local_file_path}")
+        #     return local_file_path
+        # except Exception as e:
+        #     print(f"Failed to download file: {e}")
+        #     return None
+        # ===============================================================
 
     # Simplified function to set row height
     def set_row_height(self, row_number, height):
