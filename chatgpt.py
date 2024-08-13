@@ -259,7 +259,7 @@ for task in JOBS['tasks']:
                 turn_menu_item_locator = (By.XPATH, './/div[contains(@class, "mt-1") and contains(@class, "flex") and contains(@class, "gap-3") and contains(@class, "empty:hidden") and contains(@class, "ml-")]')
                 ))
 
-            # Record the time when "Analysis complete" appears
+            # Record the time when "Analyzed" appears
             analysis_complete_time = time.time()
             end_to_end_time = round(analysis_complete_time - start_time, 2)
             print(f"[x] Prompt {idx+1} End To End Time: {end_to_end_time} seconds")
@@ -318,6 +318,8 @@ for task in JOBS['tasks']:
 
                         # Wait for the element to be fully visible
                         WebDriverWait(driver, 10).until(EC.visibility_of(img))
+                        print('[x] Waiting for 5 seconds before snapping plot image')
+                        time.sleep(5)
                         img.screenshot(file_path)
 
                         with open(file_path, 'rb') as imgfile:
