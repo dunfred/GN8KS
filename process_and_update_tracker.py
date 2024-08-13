@@ -66,63 +66,91 @@ class TaskProcessor:
         
         # Determine the link column based on the script type
         link_column = f"{script_type} Response Colab"
-        
+
         for row in rows:
             status = row['Status']
             link_value = str(row.get(link_column, "")).strip()
-
             if status == initial_status or (status == "Ready" and not link_value):
                 filtered_rows.append(row)
 
         return filtered_rows
 
-    def get_folder_id(self, folder_name):
-        # Find the folder ID by name in the root of Google Drive
-        folder_list = self.drive.ListFile({'q': "title = '{}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false".format(folder_name)}).GetList()
-        if folder_list:
-            return folder_list[0]['id']
-        else:
-            raise ValueError("Folder '{}' not found.".format(folder_name))
-
-    def upload_folder(self, local_folder_path, task_id, rater_id):
+    def get_or_create_folder(self, parent_folder_id, folder_name):
         # Query for the folder by name under the specified parent
         folder_list = self.drive.ListFile({
-            'q': f"'{self.raters_folder_id}' in parents and title = '{task_id}' and mimeType = 'application/vnd.google-apps.folder' and trashed=false"
+            'q': f"'{parent_folder_id}' in parents and title = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed=false"
         }).GetList()
-
+        
         if folder_list:
             # If the folder exists, return the first match
-            return None
-
+            return folder_list[0]['id']
         else:
-            # Create a folder in Google Drive under the Raters folder
-            task_folder = self.drive.CreateFile({
-                'title': task_id,
+            # Folder doesn't exist, create it
+            folder_metadata = {
+                'title': folder_name,
                 'mimeType': 'application/vnd.google-apps.folder',
-                'parents': [{'id': self.raters_folder_id}]
-            })
-            task_folder.Upload()
+                'parents': [{'id': parent_folder_id}]
+            }
+            folder = self.drive.CreateFile(folder_metadata)
+            folder.Upload()
+            return folder['id']
 
-            notebook_links = {'Gemini': None, 'GPT': None}
+    def skip_existing_file_in_drive(self, folder_id, file_path):
+        file_name = os.path.basename(file_path)
+        
+        # Search for the file with the same name in the folder
+        file_list = self.drive.ListFile({
+            'q': f"'{folder_id}' in parents and title = '{file_name}' and trashed=false"
+        }).GetList()
+        
+        if file_list:
+            # If the file exists, skip the upload
+            print(f"File already exists: {file_name}, skipping upload.")
+            return False
+        else:
+            # Upload the new file if it doesn't exist
+            file_drive = self.drive.CreateFile({'title': file_name, 'parents': [{'id': folder_id}]})
+            file_drive.SetContentFile(file_path)
+            file_drive.Upload()
+            print(f"Uploaded new file: {file_name} to Google Drive folder.")
+            return True
 
-            # Upload all files in the local folder to this new Drive folder
-            for filename in os.listdir(local_folder_path):
-                file_path = os.path.join(local_folder_path, filename)
-                file_drive = self.drive.CreateFile({
-                    'title': filename,
-                    'parents': [{'id': task_folder['id']}]
-                })
-                file_drive.SetContentFile(file_path)
-                file_drive.Upload()
 
-                # Check if the file is one of the notebooks and store its link
-                if filename == f"Gemini_rater_{rater_id}_ID_{task_id}.ipynb":
-                    notebook_links['Gemini'] = file_drive['alternateLink']
+    def upload_folder(self, local_folder_path, task_id, rater_id, script_type="Gemini"):
+        # Get or create the folder
+        folder_id = self.get_or_create_folder(self.raters_folder_id, task_id)
 
-                elif filename == f"GPT_rater_{rater_id}_ID_{task_id}.ipynb":
-                    notebook_links['GPT'] = file_drive['alternateLink']
+        notebook_links = {'Gemini': None, 'GPT': None}
 
-            return notebook_links
+        # Upload all files in the local folder to this new Drive folder
+        for filename in os.listdir(local_folder_path):
+            # Search for the file with the same name in the folder
+            file_list = self.drive.ListFile({
+                'q': f"'{folder_id}' in parents and title = '{filename}' and trashed=false"
+            }).GetList()
+            
+            if file_list:
+                # If the file exists, skip the upload
+                print(f"File already exists: {filename}, skipping upload.")
+            else:
+                if str(script_type).lower() in str(filename).lower():
+                    # Upload the new file if it doesn't exist
+                    file_path = os.path.join(local_folder_path, filename)
+                    file_drive = self.drive.CreateFile({
+                        'title': filename,
+                        'parents': [{'id': folder_id}]
+                    })
+                    file_drive.SetContentFile(file_path)
+                    file_drive.Upload()
+
+                    # Check if the file is one of the notebooks and store its link
+                    if filename == f"Gemini_rater_{rater_id}_ID_{task_id}.ipynb":
+                        notebook_links['Gemini'] = file_drive['alternateLink']
+
+                    elif filename == f"GPT_rater_{rater_id}_ID_{task_id}.ipynb":
+                        notebook_links['GPT'] = file_drive['alternateLink']
+
+        return notebook_links
 
     def update_task_row_data_in_tracker(self, task_id, prompt_index, prompt_response):
         # Find the row index by TASK_ID and update it
@@ -138,10 +166,8 @@ class TaskProcessor:
 
         # Now add cell values
         self.sheet.update_cell(row_index, self.sheet.find(f"Gemini Response \nTurn {prompt_index}").col, prompt_response)
-        self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready")
 
-
-    def update_colab_links_in_tracker(self, task_id, notebook_links, notebook_name):
+    def update_gemini_colab_links_in_tracker(self, task_id, notebook_links, notebook_name):
         # Find the row index by TASK_ID and update it
         row_index = self.get_task_row_index(task_id)
         
@@ -160,7 +186,12 @@ class TaskProcessor:
 
             # Now add cell value
             self.sheet.update_cell(row_index, self.sheet.find("Gemini Response Colab").col, gemini_file)
-            
+            self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready")
+
+    def update_gpt_colab_links_in_tracker(self, task_id, notebook_links, notebook_name):
+        # Find the row index by TASK_ID and update it
+        row_index = self.get_task_row_index(task_id)
+
         if notebook_links['GPT']:
             file_link = notebook_links['GPT']
             gpt_file = f'=HYPERLINK("{file_link}", "{notebook_name}")'
@@ -176,6 +207,7 @@ class TaskProcessor:
 
             # Now add cell value
             self.sheet.update_cell(row_index, self.sheet.find("GPT Response Colab").col, gpt_file)
+            self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready")
 
     def get_task_row_index(self, task_id):
         # Find the row index by TASK_ID and update it
@@ -217,7 +249,7 @@ class TaskProcessor:
         local_file_path = os.path.join(local_dir, file_name)
         if os.path.exists(local_file_path):
             print(f"File '{file_name}' exists locally at: {local_file_path}")
-            return local_file_path
+            return local_file_path.replace('\\', '/')
 
         # Download the file to the local directory
         try:

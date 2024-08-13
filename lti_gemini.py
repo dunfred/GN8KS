@@ -1,3 +1,6 @@
+''' This tool fetches queries from the Gemini vs GPT Comparative tracker, generates the notebooks and updates tracker
+'''
+
 import base64
 import os
 import re
@@ -24,8 +27,6 @@ from bake_notebook import IPYNBGenerator
 from process_and_update_tracker import TaskProcessor
 from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output
 
-''' This tool fetches queries from the Gemini vs GPT Comparative tracker, generates the notebooks and updates tracker
-'''
 
 try:
     with open('gemini-outputs.json', 'r') as of:
@@ -445,12 +446,12 @@ for task in tasks:
         )
 
         # Notebook generated. Upload the folder to Google Drive and get the notebook link
-        notebook_links = processor.upload_folder(output_dir, task_id, RATER_ID)
+        notebook_links = processor.upload_folder(output_dir, task_id, RATER_ID, script_type="Gemini")
         print('nb_name:',nb_name)
         print('notebook_links:',notebook_links)
         if notebook_links:
             # Update the task's row in the spreadsheet with the notebook google drive link
-            processor.update_colab_links_in_tracker(
+            processor.update_gemini_colab_links_in_tracker(
                 task_id, 
                 notebook_links,
                 nb_name
@@ -459,6 +460,7 @@ for task in tasks:
             print("Directory for task", task_id, "already exists in drive")
             row_index = processor.get_task_row_index(task_id)
             processor.sheet.update_cell(row_index, processor.sheet.find("Status").col, "IC Added Query")
+
         print(f'[x] Completed Task ID: {task_id}.\n\n')
 
 

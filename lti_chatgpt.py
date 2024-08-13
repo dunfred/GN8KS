@@ -1,3 +1,6 @@
+''' This tool fetches queries from the Gemini vs GPT Comparative tracker, generates the notebooks and updates tracker
+'''
+
 import base64
 import os
 import time
@@ -21,58 +24,15 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
+from process_and_update_tracker import TaskProcessor
 from utils import GPTSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
 
-# Ensure the jobs.json file is added before proceeding.
-# You can also check README.md  file to see how the "jobs.json" 
-# needs supposed to be structured as well.
-
-''' SAMPLE `jobs.json` file template
-{
-    "rater_id": "000", # Your unique rater id
-    "tasks": [
-        {
-            "task_id": "100", # ID assigned to that row on google sheet
-            # The script uploads all your files in the beginning of the chat.
-            # So currently you won't be uploading different files per turn, all will be 
-            # combined and uploaded at the very beginning of the chat session.
-            "files": [
-                {
-                    "path": "relative_file_path_1",
-                    "url": "https://url_of_file"
-                },
-                # ...
-            ],
-            "prompts": [
-                "User Prompt 1",
-                "User Prompt 2",
-                
-                # ...
-            ]
-        }
-    ]
-}
-'''
-
-try:
-    with open('jobs.json', 'r') as jfp:
-        JOBS = json.loads(jfp.read())
-except FileNotFoundError:
-    JOBS = {}
-    raise('Please make sure you "jobs.json" file is added to this directory before proceeding!')
-except json.decoder.JSONDecodeError:
-    JOBS = {}
-    raise('Your "jobs.json" file has syntax some issues, kindly fix them before proceeding.')
-
-pprint(JOBS)
 
 try:
     with open('gpt-outputs.json', 'r') as of:
         OUTPUT = defaultdict(list, json.loads(of.read())) # Convert to defaultdict type
 except Exception:
     OUTPUT = defaultdict(list)
-
-RATER_ID = JOBS['rater_id']
 
 print(platform.system())
 print(platform.machine())
@@ -154,16 +114,40 @@ print('window_height', window_height)
 driver.set_window_rect(width=window_width, height=window_height)
 # driver.set_window_rect(x=window_x, y=window_y, width=window_width, height=window_height)
 
+# Initialize the task processor
+processor = TaskProcessor()
 
+# Fetch tasks with status "Added Query"
 # Open a new session and run all prompts for each task/job
-for task in JOBS['tasks']:
-    task_id        = task['task_id']
-    prompt_files      = [f['path'] for f in task['files']]
-    prompt_file_urls = [f.get('url', "") for f in task['files']]
+tasks = processor.fetch_tasks(script_type="GPT")
+for task in tasks:
+    RATER_ID = str(task['Rater ID']).strip()
+
+    task_id = task['TASK_ID']
+    # Read All FIles Links
+    input_files_1 = task.get("Input File(s) \nTurn 1", None)
+    input_files_2 = task.get("Input File(s) \nTurn 2", None)
+    input_files_3 = task.get("Input File(s) \nTurn 3", None)
+    
+    # Read All Queries   
+    query_1 = task.get("Prompt\nTurn 1", None)
+    query_2 = task.get("Prompt\nTurn 2", None)
+    query_3 = task.get("Prompt\nTurn 3", None)
+
+    # Parse and Combine the data into a dict
+    
+    TASK_PROMPTS = [str(q).strip() for q in [query_1, query_2, query_3] if q]
+
+
+    prompt_file_urls = [str(i).strip() for i in [input_files_1, input_files_2, input_files_3] if i]
+    prompt_files      = [
+        # Get local file path of input files (download if doesn't exist)
+        processor.get_file_name_from_drive_link_and_download(f_url) for f_url in prompt_file_urls
+    ]
 
     files_uploaded = False
 
-    if len(task['prompts']) >= 1: # Continue if prompts are available
+    if TASK_PROMPTS: # Continue if prompts are available
         # Ensure the output directory exists
         base_dir = os.path.dirname(os.path.abspath(__file__))
         output_dir = os.path.join(base_dir, 'notebooks', f"ID_{task_id}")
@@ -171,10 +155,14 @@ for task in JOBS['tasks']:
 
         print(f'[x] Started Task ID: {task_id}.')
 
+        # Set the status of the tracker row to indicate it's been worked on
+        row_index = processor.get_task_row_index(task_id)
+        processor.sheet.update_cell(row_index, processor.sheet.find("Status").col, "Tool In Progress")
+
         # Open GPT
         driver.get('https://chatgpt.com/?model=gpt-4o')
 
-        for idx, user_query in enumerate(task['prompts']):
+        for idx, user_query in enumerate(TASK_PROMPTS):
             print(f'[x] {task_id} - Starting Prompt {idx+1}: {user_query}')
             # Find the input text field elem
             input_text_elem_xpath = '//*[@id="prompt-textarea"]'
@@ -353,8 +341,6 @@ for task in JOBS['tasks']:
                 else:
                     html_str += '\n' + blk.get_attribute('innerHTML')
 
-
-
             update_prompt_output(
                 main_dict       = OUTPUT,
                 id_key          = task_id,
@@ -386,10 +372,10 @@ for task in JOBS['tasks']:
             ensure_directory_exists('time-tracksheet/')
             df_filepath = 'time-tracksheet/gpt-prompts-time-track-sheet.xlsx'
             append_to_excel(df_filepath, new_data)
-        
+
         # To avoid getting logged out once in a while due to security reasons,
         # Will intentionally wait for a few more seconds before moving to next task 
-        time.sleep(15)
+        time.sleep(8)
 
         # Instantiate class for generating notebook after all prompts are done
         ipynb_gen = IPYNBGenerator(
@@ -400,9 +386,26 @@ for task in JOBS['tasks']:
         )
 
         # Generate notebook
-        ipynb_gen.html_to_notebook(
+        nb_name = ipynb_gen.html_to_notebook(
             OUTPUT[task_id]
         )
+
+        # Notebook generated. Upload the folder to Google Drive and get the notebook link
+        notebook_links = processor.upload_folder(output_dir, task_id, RATER_ID, script_type="GPT")
+        print('nb_name:',nb_name)
+        print('notebook_links:',notebook_links)
+        if notebook_links:
+            # Update the task's row in the spreadsheet with the notebook google drive link
+            processor.update_gpt_colab_links_in_tracker(
+                task_id, 
+                notebook_links,
+                nb_name
+            )
+        else:
+            print("Directory for task", task_id, "already exists in drive")
+            row_index = processor.get_task_row_index(task_id)
+            processor.sheet.update_cell(row_index, processor.sheet.find("Status").col, "IC Added Query")
+
         print(f'[x] Completed Task ID: {task_id}.\n\n')
 
 
