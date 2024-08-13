@@ -3,8 +3,6 @@ import json
 import os
 import gspread
 from dotenv import load_dotenv
-from pydrive2.auth import GoogleAuth
-from pydrive2.drive import GoogleDrive
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import AuthorizedSession
