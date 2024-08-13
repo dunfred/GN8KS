@@ -52,7 +52,7 @@ class TaskProcessor:
         self.drive = GoogleDrive(gauth)
         print(self.drive)
 
-    def fetch_tasks(self, initial_status='IC Added Query', script_type="Gemini"):
+    def fetch_tasks(self, initial_status='Rater Added Query', script_type="Gemini"):
         """
         Fetches rows based on initial status or ready status with missing A Link or B Link.
         
@@ -63,14 +63,19 @@ class TaskProcessor:
         """
         rows = self.sheet.get_all_records()
         filtered_rows = []
-        
+
+        # Status_to_check_for
+        s_to_check = "GPT" if script_type == "Gemini" else "Gemini"
+
         # Determine the link column based on the script type
         link_column = f"{script_type} Response Colab"
 
         for row in rows:
             status = row['Status']
             link_value = str(row.get(link_column, "")).strip()
-            if status == initial_status or (status == "Ready" and not link_value):
+            if status == initial_status or \
+                (status == "Ready For Rating" and not link_value) or\
+                status == f"{s_to_check} Done {script_type} Pending":
                 filtered_rows.append(row)
 
         return filtered_rows
@@ -114,7 +119,6 @@ class TaskProcessor:
             file_drive.Upload()
             print(f"Uploaded new file: {file_name} to Google Drive folder.")
             return True
-
 
     def upload_folder(self, local_folder_path, task_id, rater_id, script_type="Gemini"):
         # Get or create the folder
@@ -186,7 +190,13 @@ class TaskProcessor:
 
             # Now add cell value
             self.sheet.update_cell(row_index, self.sheet.find("Gemini Response Colab").col, gemini_file)
-            self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready")
+            
+            if self.check_if_notebook_link_exists(task_id, "GPT"):
+                # If GPT notebook link exists, then it means this row is done
+                self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready For Rating")
+            else:
+                # Otherwise set the status to show that GPT notebook is yet to be added
+                self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Gemini Done GPT Pending")
 
     def update_gpt_colab_links_in_tracker(self, task_id, notebook_links, notebook_name):
         # Find the row index by TASK_ID and update it
@@ -207,7 +217,13 @@ class TaskProcessor:
 
             # Now add cell value
             self.sheet.update_cell(row_index, self.sheet.find("GPT Response Colab").col, gpt_file)
-            self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready")
+
+            if self.check_if_notebook_link_exists(task_id, "Gemini"):
+                # Igf Gemini notebook link exists, then it means this row is done
+                self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready For Rating")
+            else:
+                # Otherwise set the status to show that Gemini notebook is yet to be added
+                self.sheet.update_cell(row_index, self.sheet.find("Status").col, "GPT Done Gemini Pending")
 
     def get_task_row_index(self, task_id):
         # Find the row index by TASK_ID and update it
@@ -217,6 +233,19 @@ class TaskProcessor:
                 row_index = idx + 2  # +2 accounts for header row and zero-indexing
                 return row_index
         return None
+
+    def check_if_notebook_link_exists(self, task_id, script_name):
+        # Find the row index by TASK_ID and update it
+        rows = self.sheet.get_all_records()
+        for idx, row in enumerate(rows):
+            if row['TASK_ID'] == task_id:
+                # Check if notebook link exists for script type and it's a url
+
+                # if 'https://' in str(row.get(f"{script_name} Response Colab", "")).strip():
+                if str(row.get(f"{script_name} Response Colab", "")).strip():
+                    return True
+                return False
+        return False
 
     # Function to get the column index based on the custom column name
     def get_column_index_by_name(self, custom_col_name):
