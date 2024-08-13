@@ -67,7 +67,7 @@ class TaskProcessor:
 
         print(self.drive)
 
-    def fetch_tasks(self, initial_status='Rater Added Query', script_type="Gemini"):
+    def fetch_new_task(self, initial_status='Rater Added Query', script_type="Gemini"):
         """
         Fetches rows based on initial status or ready status with missing A Link or B Link.
         
@@ -92,10 +92,9 @@ class TaskProcessor:
                 (status == "Ready For Rating" and not link_value) or\
                 status == f"{s_to_check} Done {script_type} Pending":
                 filtered_rows.append(row)
-        print(len(filtered_rows), "Rows To Run")
+                break # Return just first row
 
         return filtered_rows
-
 
 
     # def get_or_create_folder(self, parent_folder_id, folder_name):
@@ -231,18 +230,25 @@ class TaskProcessor:
                     # Upload the new file if it doesn't exist
                     file_path = os.path.join(local_folder_path, filename)
                     file_metadata = {'name': filename, 'parents': [folder_id]}
-                    media = MediaFileUpload(file_path, resumable=True)
-                    file_drive = self.drive.files().create(body=file_metadata, media_body=media, fields='id,webViewLink').execute()
 
+                    # Set mimetype if it's an ipynb file
+                    if str(filename).endswith('.ipynb'):
+                        media = MediaFileUpload(file_path, mimetype='application/vnd.google.colab', resumable=True)
+                    else:
+                        media = MediaFileUpload(file_path, resumable=True)
+
+                    uploaded_file = self.drive.files().create(body=file_metadata, media_body=media, fields='id,webViewLink').execute()
+                    # Generate the Colab URL
+                    colab_url = f"https://colab.research.google.com/drive/{uploaded_file['id']}"
+                    
                     # Check if the file is one of the notebooks and store its link
                     if filename == f"Gemini_rater_{rater_id}_ID_{task_id}.ipynb":
-                        notebook_links['Gemini'] = file_drive.get('webViewLink')
+                        notebook_links['Gemini'] = colab_url #uploaded_file.get('webViewLink')
 
                     elif filename == f"GPT_rater_{rater_id}_ID_{task_id}.ipynb":
-                        notebook_links['GPT'] = file_drive.get('webViewLink')
+                        notebook_links['GPT'] = colab_url # uploaded_file.get('webViewLink')
 
         return notebook_links
-
 
     def update_task_row_data_in_tracker(self, task_id, prompt_index, prompt_response):
         # Find the row index by TASK_ID and update it
@@ -352,40 +358,65 @@ class TaskProcessor:
         # Extract the file ID from the URL
         file_id = file_url.split('/d/')[1].split('/')[0]
 
-        # Get the file metadata and name
-        file = self.drive.files().get(fileId=file_id, fields='name, mimeType').execute()
-        file_name = file['name']
-        mime_type = file['mimeType']
-
-        print('File Name:', file_name)
-        print('Mime Type:', mime_type)
-        # ===============================================================
-
-        # # Extract the file ID from the URL
-        # file_id = file_url.split('/d/')[1].split('/')[0]
-
-        # # Get the file metadata and name
-        # file = self.drive.CreateFile({'id': file_id})
-        # file.FetchMetadata(fields='title,labels,mimeType')
-        # file_name = file['title']
-        # print('File Name:', file_name)
-        # print('Mime type',file['mimeType'])
-        # ===============================================================
+        # Get the file metadata (to fetch the file name and MIME type)
+        try:
+            file_metadata = self.drive.files().get(fileId=file_id, fields='name, mimeType').execute()
+            file_name = file_metadata['name']
+            mime_type = file_metadata['mimeType']
+            print('File Name:', file_name)
+            print('MimeType:', mime_type)
+        except Exception as e:
+            print(f"Failed to fetch file metadata: {e}")
+            mime_type = None
+            return None
 
         # Ensure the local directory exists
         if not os.path.exists(local_dir):
             os.makedirs(local_dir)
 
-        # Check if the file already exists locally
+        # Determine the export format based on the MIME type
+        export_format = None
+        file_extension = ''
+
+        if mime_type == 'application/vnd.google-apps.spreadsheet':
+            export_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            file_extension = '.xlsx'
+        elif mime_type == 'application/vnd.google-apps.document':
+            export_format = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            file_extension = '.docx'
+        elif mime_type == 'application/vnd.google-apps.presentation':
+            export_format = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            file_extension = '.pptx'
+        elif mime_type == 'application/pdf':
+            file_extension = '.pdf'
+        elif mime_type == 'text/csv':
+            file_extension = '.csv'
+        elif mime_type == 'text/tab-separated-values':
+            file_extension = '.tsv'
+        else:
+            print(f"Unsupported MIME type: {mime_type}")
+            return None
+
+        # Append the correct file extension if it's not already present
+        if not file_name.endswith(file_extension):
+            file_name += file_extension
+
         local_file_path = os.path.join(local_dir, file_name)
+
+        # Check if the file already exists locally
         if os.path.exists(local_file_path):
             print(f"File '{file_name}' exists locally at: {local_file_path}")
             return local_file_path.replace('\\', '/')
 
-        # ===============================================================
-        # Download the file to the local directory
+        # Download the file, using export if necessary
         try:
-            request = self.drive.files().get_media(fileId=file_id)
+            if export_format:
+                # For Google Docs Editors files (like Sheets, Docs, etc.), use export
+                request = self.drive.files().export_media(fileId=file_id, mimeType=export_format)
+            else:
+                # For directly downloadable files like CSV, PDF, etc., use get_media
+                request = self.drive.files().get_media(fileId=file_id)
+            
             fh = io.FileIO(local_file_path, 'wb')
             downloader = MediaIoBaseDownload(fh, request)
 
@@ -399,16 +430,6 @@ class TaskProcessor:
         except Exception as e:
             print(f"Failed to download file: {e}")
             return None
-        # ===============================================================
-        # # Download the file to the local directory
-        # try:
-        #     file.GetContentFile(local_file_path)
-        #     print(f"File downloaded to: {local_file_path}")
-        #     return local_file_path
-        # except Exception as e:
-        #     print(f"Failed to download file: {e}")
-        #     return None
-        # ===============================================================
 
     # Simplified function to set row height
     def set_row_height(self, row_number, height):
