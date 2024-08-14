@@ -150,7 +150,7 @@ while XON:
             TASK_PROMPTS = [str(q).strip() for q in [query_1, query_2, query_3] if q]
 
 
-            prompt_file_urls = [str(i).strip() for i in [input_files_1, input_files_2, input_files_3] if i]
+            prompt_file_urls = [str(i).strip() for i in set([input_files_1, input_files_2, input_files_3]) if i]
             prompt_files      = [
                 # Get local file path of input files (download if doesn't exist)
                 processor.get_file_name_from_drive_link_and_download(f_url) for f_url in prompt_file_urls
