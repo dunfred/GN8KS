@@ -84,7 +84,7 @@ class TaskProcessor:
         link_column = f"{script_type} Response Colab"
 
         for row in rows:
-            status = row['Status']
+            status = row['GN8K Status']
             link_value = str(row.get(link_column, "")).strip()
             if status == initial_status or \
                 (status == "Ready For Rating" and not link_value) or\
@@ -285,10 +285,10 @@ class TaskProcessor:
             
             if self.check_if_notebook_link_exists(task_id, "GPT"):
                 # If GPT notebook link exists, then it means this row is done
-                self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready For Rating")
+                self.sheet.update_cell(row_index, self.sheet.find("GN8K Status").col, "Ready For Rating")
             else:
                 # Otherwise set the status to show that GPT notebook is yet to be added
-                self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Gemini Done GPT Pending")
+                self.sheet.update_cell(row_index, self.sheet.find("GN8K Status").col, "Gemini Done GPT Pending")
 
     def update_gpt_colab_links_in_tracker(self, task_id, notebook_links, notebook_name):
         # Find the row index by TASK_ID and update it
@@ -312,10 +312,10 @@ class TaskProcessor:
 
             if self.check_if_notebook_link_exists(task_id, "Gemini"):
                 # Igf Gemini notebook link exists, then it means this row is done
-                self.sheet.update_cell(row_index, self.sheet.find("Status").col, "Ready For Rating")
+                self.sheet.update_cell(row_index, self.sheet.find("GN8K Status").col, "Ready For Rating")
             else:
                 # Otherwise set the status to show that Gemini notebook is yet to be added
-                self.sheet.update_cell(row_index, self.sheet.find("Status").col, "GPT Done Gemini Pending")
+                self.sheet.update_cell(row_index, self.sheet.find("GN8K Status").col, "GPT Done Gemini Pending")
 
     def get_task_row_index(self, task_id):
         # Find the row index by TASK_ID and update it

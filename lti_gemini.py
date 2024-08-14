@@ -168,7 +168,7 @@ while XON:
 
                 # Set the status of the tracker row to indicate it's been worked on
                 row_index = processor.get_task_row_index(task_id)
-                processor.sheet.update_cell(row_index, processor.sheet.find("Status").col, "Tool In Progress")
+                processor.sheet.update_cell(row_index, processor.sheet.find("GN8K Status").col, "Tool In Progress")
 
                 # Open Gemini
                 driver.get('https://gemini.google.com/')
@@ -466,7 +466,7 @@ while XON:
                 else:
                     print("Directory for task", task_id, "already exists in drive")
                     row_index = processor.get_task_row_index(task_id)
-                    processor.sheet.update_cell(row_index, processor.sheet.find("Status").col, "Rater Added Query")
+                    processor.sheet.update_cell(row_index, processor.sheet.find("GN8K Status").col, "Rater Added Query")
 
                 print(f'[x] Completed Task ID: {task_id}.\n\n')
 
@@ -474,7 +474,7 @@ while XON:
             print('Error E',e)
             # In case of an error, set the status of the row back to "Rater added query"
             row_index = processor.get_task_row_index(task_id)
-            processor.sheet.update_cell(row_index, processor.sheet.find("Status").col, "Rater Added Query")
+            processor.sheet.update_cell(row_index, processor.sheet.find("GN8K Status").col, "Rater Added Query")
 
     # Check if there is any new task
     tasks = processor.fetch_new_task()
