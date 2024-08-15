@@ -86,7 +86,8 @@ class TaskProcessor:
         for row in rows:
             status = row['GN8K Status']
             link_value = str(row.get(link_column, "")).strip()
-            if status == initial_status or \
+
+            if (status == initial_status and row["Reviewer's Query \nCheck Status"]=="Query Approved") or \
                 (status == "Ready For Rating" and not link_value) or\
                 status == f"{s_to_check} Done {script_type} Pending":
                 filtered_rows.append(row)

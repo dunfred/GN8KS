@@ -16,6 +16,7 @@ from selenium import webdriver
 from collections import defaultdict
 from bake_notebook import IPYNBGenerator
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from pynput.keyboard import Key as PyKey, Controller
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -184,7 +185,15 @@ for task in JOBS['tasks']:
             files_str = list(map(lambda x: str(Path(x).resolve()), prompt_files))
             time.sleep(3)
             prompt_elem = driver.find_element(By.XPATH, input_text_elem_xpath)
-            prompt_elem.send_keys(user_query)
+            
+            # Assuming some prompts have new lines
+            # Split the text into lines
+            lines = user_query.split('\n')
+
+            # Send each line separately followed by SHIFT+ENTER to create a new line without triggering the form submission
+            for line in lines:
+                prompt_elem.send_keys(line)
+                prompt_elem.send_keys(Keys.SHIFT + Keys.ENTER)
 
             # Find the file input element by its name or ID
             WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, input_text_elem_xpath)))
