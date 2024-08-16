@@ -201,8 +201,13 @@ for task in JOBS['tasks']:
             # Ensures all files are uploaded just once.
             if not files_uploaded:
                 for file in files_str:
-                    upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
-                    WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
+                    try:
+                        upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/span/div/button[2]'
+                        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
+                    except Exception:
+                        upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
+                        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
+
                     driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
                     # Construct the XPath to find the upload file element with this id prefix and text match
