@@ -356,7 +356,11 @@ for task in JOBS['tasks']:
 
             # Find all img elements within the response element that have the ngcontent attribute
             plot_images = gemini_reponse_elem.find_elements(By.TAG_NAME, 'img')
-            plot_images = [i for i in plot_images if str(i.get_attribute('alt')).lower().strip() == "chart shown as an image"]
+            plot_images = [
+                i for i in plot_images \
+                    if str(i.get_attribute('alt')).lower().strip() == "chart shown as an image" or\
+                    ("image" in str(i.get_attribute('class')).lower().strip() and "ng-star-inserted" in str(i.get_attribute('class')).lower().strip())
+            ]
 
             # Iterate through each plot image and save it
             for img_idx, img in enumerate(plot_images):
