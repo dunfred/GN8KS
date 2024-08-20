@@ -4,6 +4,7 @@ import re
 import time
 import json
 import random
+import requests
 import pyautogui
 import pyperclip
 import platform
@@ -361,6 +362,19 @@ for task in JOBS['tasks']:
                     if str(i.get_attribute('alt')).lower().strip() == "chart shown as an image" or\
                     ("image" in str(i.get_attribute('class')).lower().strip() and "ng-star-inserted" in str(i.get_attribute('class')).lower().strip())
             ]
+            base64_plot_images = []
+            
+            # Extract cookies from the Selenium session
+            selenium_cookies = driver.get_cookies()
+
+            # Convert cookies to the format used by the requests library
+            cookies = {cookie['name']: cookie['value'] for cookie in selenium_cookies}
+
+            # Extract headers from the Selenium session
+            headers = {
+                'User-Agent': driver.execute_script("return navigator.userAgent;"),
+                'Accept-Language': driver.execute_script("return navigator.language;"),
+            }
 
             # Iterate through each plot image and save it
             for img_idx, img in enumerate(plot_images):
@@ -371,8 +385,30 @@ for task in JOBS['tasks']:
                 # Remove the base64 prefix
                 if 'base64,' in src:
                     base64_data = src.split('base64,')[1]
+                    base64_plot_images.append({
+                        'element': img,
+                        'base64_src': base64_data
+                    })
+
+                elif 'https://' in str(src):
+
+                    # Download the image
+                    response = requests.get(src, cookies=cookies, headers=headers)
+                    image_data = response.content
+
+                    # Convert the image data to base64
+                    base64_data = base64.b64encode(image_data).decode('utf-8')
+                    base64_plot_images.append({
+                        'element': img,
+                        'base64_src': base64_data
+                    })
+
                 else:
                     base64_data = src
+                    base64_plot_images.append({
+                        'element': img,
+                        'base64_src': base64_data
+                    })
 
                 # Decode the base64 data and save the image
                 img_data = base64.b64decode(base64_data)
@@ -399,9 +435,7 @@ for task in JOBS['tasks']:
             notebook_response_copy = replace_json_tags(
                 notebook_str=notebook_response_copy,
                 base64_images=[
-                    img.get_attribute('src').split('base64,')[1] if 'base64,' in img.get_attribute('src')\
-                    else img.get_attribute('src')\
-                    for img in plot_images
+                    img_dict['base64_src'] for img_dict in base64_plot_images
                 ]
             )
 
