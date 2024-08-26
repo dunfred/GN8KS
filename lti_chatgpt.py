@@ -29,11 +29,7 @@ from process_and_update_tracker import TaskProcessor
 from utils import GPTSpecificTextInLastElement, append_to_excel, ensure_directory_exists, update_prompt_output
 
 
-try:
-    with open('gpt-outputs.json', 'r') as of:
-        OUTPUT = defaultdict(list, json.loads(of.read())) # Convert to defaultdict type
-except Exception:
-    OUTPUT = defaultdict(list)
+OUTPUT = defaultdict(list)
 
 print(platform.system())
 print(platform.machine())
@@ -375,7 +371,7 @@ while XON:
                     )
                     
                     # Create local update/backup
-                    with open('gpt-outputs.json', 'w') as out:
+                    with open('lti-gpt-outputs.json', 'w') as out:
                         out.write(json.dumps(OUTPUT))
 
                     new_data = pd.Series({

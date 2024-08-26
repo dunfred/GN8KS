@@ -30,11 +30,7 @@ from process_and_update_tracker import TaskProcessor
 from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output
 
 
-try:
-    with open('gemini-outputs.json', 'r') as of:
-        OUTPUT = defaultdict(list, json.loads(of.read()))  # Convert to defaultdict type
-except Exception:
-    OUTPUT = defaultdict(list)
+OUTPUT = defaultdict(list)
 
 print("OS:\t",platform.system())
 print("Type:\t",platform.machine())
@@ -458,9 +454,8 @@ while XON:
                     )
                     
                     # Create local update/backup
-                    with open('gemini-outputs.json', 'w') as out:
+                    with open('lti-gemini-outputs.json', 'w') as out:
                         out.write(json.dumps(OUTPUT))
-
 
                     new_data = pd.Series({
                         'rater_id': RATER_ID,
