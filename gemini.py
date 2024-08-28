@@ -113,20 +113,22 @@ options.add_argument("--disable-gpu")  # This option is recommended to avoid har
 options.add_argument("--window-size=1920,1080")  # You can specify your desired window size
 options.add_argument('--no-sandbox')
 
-# Path to your existing user profile
-if system == "Windows":
-    options.add_argument(r'--user-data-dir=C:\selenium_chrome_profile')
+if system != "Darwin":
+    # Path to your existing user profile
+    if system == "Windows":
+        options.add_argument(r'--user-data-dir=C:\selenium_chrome_profile')
 
-elif system == "Darwin":
-    options.add_argument(f'--user-data-dir=/Users/{system_username}/selenium_chrome_profile')
+    elif system == "Darwin":
+        options.add_argument(f'--user-data-dir=/Users/{system_username}/selenium_chrome_profile')
 
-elif system == "Linux":
-    options.add_argument(f'--user-data-dir=/home/{system_username}/selenium_chrome_profile')
+    elif system == "Linux":
+        options.add_argument(f'--user-data-dir=/home/{system_username}/selenium_chrome_profile')
 
+    else:
+        raise Exception("Unsupported operating system")
 else:
-    raise Exception("Unsupported operating system")
+    options.add_experimental_option("debuggerAddress", "localhost:9222") # Your Gemini's chrome profile port would be on port "9222"
 
-# options.add_experimental_option("debuggerAddress", "localhost:9222") # Your Gemini's chrome profile port would be on port "9222"
 options.add_argument("--disable-blink-features=AutomationControlled")
 
 # Function to introduce random delays
