@@ -83,7 +83,7 @@ class TaskProcessor:
         # Determine the link column based on the script type
         link_column = f"{script_type} Response Colab"
 
-        for row in rows:
+        for idx, row in enumerate(rows):
             status = row['GN8K Status']
             link_value = str(row.get(link_column, "")).strip()
 
@@ -91,86 +91,14 @@ class TaskProcessor:
                 (status == "Ready For Rating" and not link_value) or\
                 status == f"{s_to_check} Done {script_type} Pending":
                 filtered_rows.append(row)
+
+                # Set the status of the tracker row to indicate it's been worked on
+                row_index = idx + 2  # +2 accounts for header row and zero-indexing
+                self.sheet.update_cell(row_index, self.sheet.find("GN8K Status").col, "Tool In Progress")
+
                 break # Return just first row
 
         return filtered_rows
-
-
-    # def get_or_create_folder(self, parent_folder_id, folder_name):
-    #     # Query for the folder by name under the specified parent
-    #     folder_list = self.drive.ListFile({
-    #         'q': f"'{parent_folder_id}' in parents and title = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed=false"
-    #     }).GetList()
-        
-    #     if folder_list:
-    #         # If the folder exists, return the first match
-    #         return folder_list[0]['id']
-    #     else:
-    #         # Folder doesn't exist, create it
-    #         folder_metadata = {
-    #             'title': folder_name,
-    #             'mimeType': 'application/vnd.google-apps.folder',
-    #             'parents': [{'id': parent_folder_id}]
-    #         }
-    #         folder = self.drive.CreateFile(folder_metadata)
-    #         folder.Upload()
-    #         return folder['id']
-
-    # def skip_existing_file_in_drive(self, folder_id, file_path):
-    #     file_name = os.path.basename(file_path)
-        
-    #     # Search for the file with the same name in the folder
-    #     file_list = self.drive.ListFile({
-    #         'q': f"'{folder_id}' in parents and title = '{file_name}' and trashed=false"
-    #     }).GetList()
-        
-    #     if file_list:
-    #         # If the file exists, skip the upload
-    #         print(f"File already exists: {file_name}, skipping upload.")
-    #         return False
-    #     else:
-    #         # Upload the new file if it doesn't exist
-    #         file_drive = self.drive.CreateFile({'title': file_name, 'parents': [{'id': folder_id}]})
-    #         file_drive.SetContentFile(file_path)
-    #         file_drive.Upload()
-    #         print(f"Uploaded new file: {file_name} to Google Drive folder.")
-    #         return True
-
-    # def upload_folder(self, local_folder_path, task_id, rater_id, script_type="Gemini"):
-    #     # Get or create the folder
-    #     folder_id = self.get_or_create_folder(self.raters_folder_id, task_id)
-
-    #     notebook_links = {'Gemini': None, 'GPT': None}
-
-    #     # Upload all files in the local folder to this new Drive folder
-    #     for filename in os.listdir(local_folder_path):
-    #         # Search for the file with the same name in the folder
-    #         file_list = self.drive.ListFile({
-    #             'q': f"'{folder_id}' in parents and title = '{filename}' and trashed=false"
-    #         }).GetList()
-            
-    #         if file_list:
-    #             # If the file exists, skip the upload
-    #             print(f"File already exists: {filename}, skipping upload.")
-    #         else:
-    #             if str(script_type).lower() in str(filename).lower():
-    #                 # Upload the new file if it doesn't exist
-    #                 file_path = os.path.join(local_folder_path, filename)
-    #                 file_drive = self.drive.CreateFile({
-    #                     'title': filename,
-    #                     'parents': [{'id': folder_id}]
-    #                 })
-    #                 file_drive.SetContentFile(file_path)
-    #                 file_drive.Upload()
-
-    #                 # Check if the file is one of the notebooks and store its link
-    #                 if filename == f"Gemini_rater_{rater_id}_ID_{task_id}.ipynb":
-    #                     notebook_links['Gemini'] = file_drive['alternateLink']
-
-    #                 elif filename == f"GPT_rater_{rater_id}_ID_{task_id}.ipynb":
-    #                     notebook_links['GPT'] = file_drive['alternateLink']
-
-    #     return notebook_links
 
     def get_or_create_folder(self, parent_folder_id, folder_name):
         # Query for the folder by name under the specified parent

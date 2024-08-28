@@ -157,9 +157,9 @@ while XON:
 
                 print(f'[x] Started Task ID: {task_id}.')
 
-                # Set the status of the tracker row to indicate it's been worked on
-                row_index = processor.get_task_row_index(task_id)
-                processor.sheet.update_cell(row_index, processor.sheet.find("GN8K Status").col, "Tool In Progress")
+                # # Set the status of the tracker row to indicate it's been worked on
+                # row_index = processor.get_task_row_index(task_id)
+                # processor.sheet.update_cell(row_index, processor.sheet.find("GN8K Status").col, "Tool In Progress")
 
                 # Open GPT
                 driver.get('https://chatgpt.com/?model=gpt-4o')
@@ -191,11 +191,15 @@ while XON:
                     if not files_uploaded:
                         for file in files_str:
                             try:
-                                upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/span/div/button[2]'
+                                upload_files_elem_xpath = "//*[starts-with(@id, 'radix-:r')]/following-sibling::button[@aria-label='Attach files'][1]"
                                 WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
                             except Exception:
-                                upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
-                                WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
+                                try:
+                                    upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/span/div/button[2]'
+                                    WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
+                                except Exception:
+                                    upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
+                                    WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
 
                             driver.find_element(By.XPATH, upload_files_elem_xpath).click()
 
@@ -236,9 +240,12 @@ while XON:
                         # time.sleep(20)
 
                     # Submit the query.
-                    submit_prompt_btn_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/button'
-
-                    WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                    try:
+                        submit_prompt_btn_xpath = "//button[@aria-label='Send prompt' and @data-testid='send-button']"
+                        WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
+                    except Exception:
+                        submit_prompt_btn_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/button'
+                        WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, submit_prompt_btn_xpath)))
 
                     submit_prompt_btn = driver.find_element(By.XPATH, submit_prompt_btn_xpath)
                     try:

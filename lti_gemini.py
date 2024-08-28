@@ -164,9 +164,9 @@ while XON:
 
                 print(f'[x] Started Task ID: {task_id}.')
 
-                # Set the status of the tracker row to indicate it's been worked on
-                row_index = processor.get_task_row_index(task_id)
-                processor.sheet.update_cell(row_index, processor.sheet.find("GN8K Status").col, "Tool In Progress")
+                # # Set the status of the tracker row to indicate it's been worked on
+                # row_index = processor.get_task_row_index(task_id)
+                # processor.sheet.update_cell(row_index, processor.sheet.find("GN8K Status").col, "Tool In Progress")
 
                 # Open Gemini
                 driver.get('https://gemini.google.com/')
