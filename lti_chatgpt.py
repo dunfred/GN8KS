@@ -17,7 +17,7 @@ from pprint import pprint
 from datetime import datetime
 from selenium import webdriver
 from collections import defaultdict
-from bake_notebook import IPYNBGenerator
+from lti_bake_notebook import IPYNBGenerator
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from pynput.keyboard import Key as PyKey, Controller

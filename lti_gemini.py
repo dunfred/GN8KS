@@ -25,7 +25,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from pynput.keyboard import Key as PyKey, Controller
 from pprint import pprint
-from bake_notebook import IPYNBGenerator
+from lti_bake_notebook import IPYNBGenerator
 from process_and_update_tracker import TaskProcessor
 from utils import LastFooterElement, TextInLastElement, GeminiSpecificTextInLastElement, append_to_excel, ensure_directory_exists, replace_json_tags, update_error_code_counts, update_prompt_output
 

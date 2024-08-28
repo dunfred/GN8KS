@@ -169,10 +169,10 @@ class TaskProcessor:
                     colab_url = f"https://colab.research.google.com/drive/{uploaded_file['id']}"
                     
                     # Check if the file is one of the notebooks and store its link
-                    if filename == f"Gemini_rater_{rater_id}_ID_{task_id}.ipynb":
+                    if filename == f"Gemini_rater_{rater_id}_ID_{task_id}_GN8K.ipynb":
                         notebook_links['Gemini'] = colab_url #uploaded_file.get('webViewLink')
 
-                    elif filename == f"GPT_rater_{rater_id}_ID_{task_id}.ipynb":
+                    elif filename == f"GPT_rater_{rater_id}_ID_{task_id}_GN8K.ipynb":
                         notebook_links['GPT'] = colab_url # uploaded_file.get('webViewLink')
 
         return notebook_links
@@ -308,21 +308,27 @@ class TaskProcessor:
         if mime_type == 'application/vnd.google-apps.spreadsheet':
             export_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             file_extension = '.xlsx'
+
         elif mime_type == 'application/vnd.google-apps.document':
             export_format = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             file_extension = '.docx'
+
         elif mime_type == 'application/vnd.google-apps.presentation':
             export_format = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
             file_extension = '.pptx'
+
         elif mime_type == 'application/pdf':
             file_extension = '.pdf'
+
         elif mime_type == 'text/csv':
             file_extension = '.csv'
+
         elif mime_type == 'text/tab-separated-values':
             file_extension = '.tsv'
+
         else:
-            print(f"Unsupported MIME type: {mime_type}")
-            return None
+            print(f"Unsupported MIME type (Most likely downloadable): {mime_type}")
+            # return None
 
         # Append the correct file extension if it's not already present
         if not file_name.endswith(file_extension):
@@ -343,7 +349,7 @@ class TaskProcessor:
             else:
                 # For directly downloadable files like CSV, PDF, etc., use get_media
                 request = self.drive.files().get_media(fileId=file_id)
-            
+
             fh = io.FileIO(local_file_path, 'wb')
             downloader = MediaIoBaseDownload(fh, request)
 
