@@ -203,11 +203,11 @@ for task in JOBS['tasks']:
             if not files_uploaded:
                 for file in files_str:
                     try:
-                        upload_files_elem_xpath = "//*[starts-with(@id, 'radix-:r')]/following-sibling::button[@aria-label='Attach files'][1]"
+                        upload_files_elem_xpath = "//*[starts-with(@id, 'radix-:r')]//following::button[@aria-label='Attach files'][1]"
                         WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
                     except Exception:
                         try:
-                            upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/span/div/button[2]'
+                            upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div/div[1]/div/form/div/div[2]/div/div/div[1]/div/span/button'
                             WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, upload_files_elem_xpath)))
                         except Exception:
                             upload_files_elem_xpath = '//*[@id="__next"]/div[1]/div[2]/main/div[1]/div[2]/div[1]/div/form/div/div[2]/div/div/div[1]/div/button[2]'
