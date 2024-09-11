@@ -253,8 +253,16 @@ for task in JOBS['tasks']:
                 f.write(json.dumps(response.json(),indent=4))
 
             # Parse and Generate Notebook String from Turn Output
+            part_idx = 5
+            for i in range(3,6)[::-1]:
+                try:
+                    print(len(response.json()["candidates"][0]["content"]["parts"][5]["structuredData"]["advancedIceFlow"]["iceFlowState"]["events"]), 'events')
+                    part_idx = i
+                    break
+                except Exception:
+                    pass
             try:
-                for i in response.json()["candidates"][0]["content"]["parts"][3]["structuredData"]["advancedIceFlow"]["iceFlowState"]["events"]:
+                for i in response.json()["candidates"][0]["content"]["parts"][part_idx]["structuredData"]["advancedIceFlow"]["iceFlowState"]["events"]:
                     if i['eventTag'] in [
                         'EVENT_TAG_CODE',
                         'EVENT_TAG_CODE_MSG_OUT',
@@ -276,11 +284,14 @@ for task in JOBS['tasks']:
 
             
             # Save Images For this Turn (if any)
-            parts = response.json()["candidates"][0]["content"]["parts"]
+            candidates = response.json()["candidates"]
 
-            # Recover png images, of course different file types can be identified - Matplotlib
-            images = [x for x in parts if "fileData" in x.keys() and ("png" in x["partMetadata"]["tag"])]
-            links = [x["fileData"]["fileUri"] for x in images]
+            # Filter to get the parts that contain fileData with PNG images
+            images = [part for candidate in candidates for part in candidate["content"]["parts"]
+                    if "fileData" in part and part["fileData"].get("mimeType") == "image/png"]
+
+            # Extract the links for the PNG images
+            links = [image["fileData"]["fileUri"] for image in images]
 
             for im_idx, l in enumerate(links):
                 im = Image.open(requests.get(l, stream=True).raw)
@@ -291,7 +302,8 @@ for task in JOBS['tasks']:
 
 
             # Save images for this turn (if any) - Altair
-            alt_images = [x for x in parts if "fileData" in x.keys() and ("json" in x["partMetadata"]["tag"])]
+            alt_images = [part for candidate in candidates for part in candidate["content"]["parts"]
+             if "fileData" in part and part["fileData"].get("mimeType") == "application/json"]
             alt_links = [x["fileData"]["fileUri"] for x in alt_images]
             alt_base64_images = []
             for im_idx, l in enumerate(alt_links):
