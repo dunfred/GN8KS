@@ -83,7 +83,7 @@ class GeminiSpecificTextInLastElement:
         elements = driver.find_elements(*self.locator)
         if elements:
             last_element = elements[-1]
-            if self.text in last_element.text or "Analysis unsuccessful" in last_element.text:
+            if self.text in last_element.text or "Analysis unsuccessful" in last_element.text or "Unfortunate" in last_element.text:
                 return last_element
         return False
 
