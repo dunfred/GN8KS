@@ -6,7 +6,7 @@ This project aims to automate the process of running and documenting the results
 
 ## Requirements
 
-- Google Chrome version `127.0.6533.99` or higher. You can always go [here](https://googlechromelabs.github.io/chrome-for-testing/) to download the appropriate chrome driver version you need as well.
+- Google Chrome version `129.0.6668.100` or higher. You can always go [here](https://googlechromelabs.github.io/chrome-for-testing/) to download the appropriate chrome driver version you need as well.
 - A virtual environment with Python version 3.9 (You can also check `runtime.txt` for exact patch version I used)
 
 
