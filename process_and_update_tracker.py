@@ -37,7 +37,7 @@ class TaskProcessor:
         self.spreadsheet_id = SPREAD_SHEET_ID
         self.credentials_path = SERVICE_ACCOUNT_PATH
 
-        token_uri =  "https://oauth2.googleapis.com/token",
+        token_uri =  "https://oauth2.googleapis.com/token"
 
         scoped_credentials = [
             'https://www.googleapis.com/auth/spreadsheets',
